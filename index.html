@@ -79,6 +79,7 @@
 
   <nav class="tabs" role="tablist">
     <button role="tab" data-t="dash" aria-selected="true">Bảng của tôi</button>
+    <button role="tab" data-t="kids" aria-selected="false">Nhiệm vụ cho con</button>
     <button role="tab" data-t="todo" aria-selected="false">Việc hôm nay</button>
     <button role="tab" data-t="cal" aria-selected="false">Ngày + lịch âm</button>
     <button role="tab" data-t="quote" aria-selected="false">Lời nhắc</button>
@@ -108,6 +109,20 @@
         <label><span>Lịch hôm nay, mỗi dòng một việc</span>
           <textarea id="dashItems" placeholder="Cả ngày | ! Tuần lễ sách&#10;16:30 Gặp chị Lan&#10;x Gửi báo cáo"></textarea></label>
         <p class="hint">Ghi giờ ở đầu dòng (<b>16:30 …</b>) hoặc dùng dấu <b>|</b> (<b>Cả ngày | …</b>). <b>!</b> trước nội dung thêm dấu đỏ, <b>x</b> ở đầu dòng là việc đã xong (được đếm, không hiện).</p>
+      </section>
+
+      <section class="panel" data-p="kids" hidden>
+        <label><span>Kiểu giao diện</span>
+          <select id="kidStyle"><option value="stars">Bảng sao – một bé</option><option value="duo">Hai bé – hai cột</option><option value="hero">Nhiệm vụ đặc biệt</option></select></label>
+        <div class="row">
+          <label><span>Tên bé thứ nhất</span><input id="kid1Name" type="text" maxlength="16"></label>
+          <label data-kid="duo"><span>Tên bé thứ hai</span><input id="kid2Name" type="text" maxlength="16"></label>
+        </div>
+        <label data-kid="stars duo"><span>Nhiệm vụ của bé thứ nhất, mỗi dòng một việc</span><textarea id="kid1Tasks" style="min-height:96px"></textarea></label>
+        <label data-kid="duo"><span>Nhiệm vụ của bé thứ hai</span><textarea id="kid2Tasks" style="min-height:96px"></textarea></label>
+        <label data-kid="hero"><span>Nhiệm vụ đặc biệt</span><textarea id="kidMission" style="min-height:70px"></textarea></label>
+        <label data-kid="stars hero"><span>Phần thưởng khi hoàn thành (không bắt buộc)</span><input id="kidReward" type="text" maxlength="36"></label>
+        <p class="hint" data-kid="stars duo">Thêm <b>x</b> ở đầu dòng khi con làm xong: ngôi sao/ô sẽ được tô kín và đếm vào tổng.</p>
       </section>
 
       <section class="panel" data-p="todo">
@@ -193,7 +208,7 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab,v2:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
@@ -201,7 +216,8 @@ function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}ca
   for(const k of FIELDS)if(k in o){const el=$(k);if(el.type==='checkbox')el.checked=!!o[k];else el.value=o[k];}
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
   if(!o.v2){o.dashIcon='home';o.dashUpper=true;$('dashIcon').value='home';$('dashUpper').checked=true;} // bản 2: nhà + in hoa
-  const def={dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
+  const def={kid1Name:'Vy',kid2Name:'Viên',kid1Tasks:'Đánh răng, rửa mặt\nx Dọn đồ chơi\nĐọc sách 15 phút\nTưới cây cùng mẹ',kid2Tasks:'Gấp quần áo\nx Cho cá ăn\nLàm bài tập toán',
+    kidMission:'Tự xếp cặp sách cho ngày mai',kidReward:'Đi công viên cuối tuần',dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
   for(const k in def)if(!(k in o))$(k).value=def[k];
   if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
   const t=new Date();$('calDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
@@ -290,6 +306,62 @@ function drawDash(ctx,w,h){
       if(isLast)t=ellipsize(ctx,t+' …',rw-p.tw-p.mw);ctx.fillText(ellipsize(ctx,t,rw-p.tw-p.mw),tx,top+row*lh+s);}}
 }
 
+/* ---------- Nhiệm vụ cho con ---------- */
+function star(ctx,cx,cy,r,filled){
+  const pts=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*0.45:r;pts.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr]);}
+  const poly=(s)=>{ctx.beginPath();pts.forEach(([x,y],i)=>{const px=cx+(x-cx)*s,py=cy+(y-cy)*s;i?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.closePath();ctx.fill();};
+  ctx.fillStyle=accent();poly(1);if(!filled){ctx.fillStyle=WHITE;poly(0.48);}
+}
+function gift(ctx,x,y){x=Math.round(x);y=Math.round(y);ctx.fillStyle=accent();ctx.fillRect(x,y+3,11,2);ctx.fillRect(x+1,y+6,9,6);ctx.fillRect(x+2,y,3,2);ctx.fillRect(x+6,y,3,2);ctx.fillStyle=WHITE;ctx.fillRect(x+5,y+3,1,9);}
+function box(ctx,x,y,s,filled){ctx.fillStyle=INK;ctx.fillRect(x,y,s,1);ctx.fillRect(x,y+s-1,s,1);ctx.fillRect(x,y,1,s);ctx.fillRect(x+s-1,y,1,s);if(filled){ctx.fillStyle=accent();ctx.fillRect(x+2,y+2,s-4,s-4);}}
+function tasks(id){return $(id).value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>/^[xX✓]\s+/.test(s)?{t:s.replace(/^[xX✓]\s+/,''),done:true}:{t:s,done:false});}
+const UP=s=>String(s).toLocaleUpperCase('vi');
+function shortDate(){const d=new Date();return `${['CN','T2','T3','T4','T5','T6','T7'][d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;}
+
+function drawKids(ctx,w,h){({stars:kidsStars,duo:kidsDuo,hero:kidsHero})[$('kidStyle').value](ctx,w,h);}
+function kidsStars(ctx,w,h){
+  const m=6,list=tasks('kid1Tasks'),done=list.filter(t=>t.done).length,reward=$('kidReward').value.trim();
+  star(ctx,m+6,10,6.5,true);
+  setFont(ctx,13,800);ctx.fillStyle=INK;const title='NHIỆM VỤ CỦA '+UP($('kid1Name').value.trim()||'con');
+  let cw=0;setFont(ctx,12,700);const cnt=`${done}/${list.length}`;cw=ctx.measureText(cnt).width+16;
+  setFont(ctx,13,800);ctx.fillText(ellipsize(ctx,title,w-m*2-18-cw-6),m+16,15);
+  setFont(ctx,12,700);ctx.textAlign='right';ctx.fillText(cnt,w-m-14,15);ctx.textAlign='left';star(ctx,w-m-6,10,5.5,true);
+  ctx.fillStyle=INK;ctx.fillRect(2,20,w-4,2);
+  const top=25,bottom=reward?h-20:h-3,avail=bottom-top;
+  let size=14,rowH;for(;size>=10;size--){rowH=size+6;if(list.length*rowH<=avail)break;}
+  const rows=Math.max(1,Math.floor(avail/rowH)),show=list.slice(0,rows);
+  show.forEach((it,i)=>{const y=top+i*rowH,cy=y+rowH/2;star(ctx,m+6,cy,Math.min(6.5,rowH/2-0.5),it.done);
+    setFont(ctx,size,it.done?500:600);ctx.fillStyle=INK;const tx=m+17,t=ellipsize(ctx,it.t,w-tx-m);const by=Math.round(cy+size*0.36);ctx.fillText(t,tx,by);
+    if(it.done)hline(ctx,tx,tx+ctx.measureText(t).width,Math.round(by-size*0.32));});
+  if(!list.length){setFont(ctx,12,500,SERIF);ctx.fillStyle=INK;ctx.fillText('Thêm nhiệm vụ cho con nhé!',m+4,top+20);}
+  if(reward){hline(ctx,m,w-m,h-18);gift(ctx,m,h-15);setFont(ctx,11,700);ctx.fillStyle=INK;ctx.fillText(ellipsize(ctx,'Thưởng: '+reward,w-m*2-16),m+16,h-5);}
+}
+function kidsDuo(ctx,w,h){
+  const m=5;setFont(ctx,13,800);ctx.fillStyle=INK;ctx.fillText('NHIỆM VỤ HÔM NAY',m,15);
+  setFont(ctx,10,500);ctx.fillStyle=accent();ctx.textAlign='right';ctx.fillText(shortDate(),w-m,14);ctx.textAlign='left';
+  ctx.fillStyle=INK;ctx.fillRect(2,19,w-4,2);const mid=Math.round(w/2);ctx.fillRect(mid,25,1,h-29);
+  [[$('kid1Name').value,'kid1Tasks',m],[$('kid2Name').value,'kid2Tasks',mid+6]].forEach(([name,id,x])=>{
+    const cw=(x===m?mid-6:w-m)-x,list=tasks(id),done=list.filter(t=>t.done).length;
+    star(ctx,x+5,30,5,true);setFont(ctx,12,800);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,UP(name.trim()||'Bé'),cw-40),x+13,35);
+    setFont(ctx,10,600);ctx.fillStyle=INK;ctx.textAlign='right';ctx.fillText(`${done}/${list.length}`,x+cw,34);ctx.textAlign='left';
+    const top=41,avail=h-3-top;let size=11,rowH;for(;size>=9;size--){rowH=size+5;if(list.length*rowH<=avail)break;}
+    list.slice(0,Math.floor(avail/rowH)).forEach((it,i)=>{const y=top+i*rowH,bs=size-2;box(ctx,x,y+Math.round((rowH-bs)/2)-1,bs,it.done);
+      setFont(ctx,size,it.done?400:600);ctx.fillStyle=INK;const tx=x+bs+4,t=ellipsize(ctx,it.t,x+cw-tx),by=y+Math.round(rowH/2+size*0.36)-1;ctx.fillText(t,tx,by);
+      if(it.done)hline(ctx,tx,tx+ctx.measureText(t).width,Math.round(by-size*0.32));});
+  });
+}
+function kidsHero(ctx,w,h){
+  const m=8,reward=$('kidReward').value.trim(),name=$('kid1Name').value.trim();
+  for(const [x,y] of [[m+5,10],[w-m-5,10]])star(ctx,x,y,5.5,true);
+  setFont(ctx,10,800);ctx.fillStyle=INK;spaced(ctx,'NHIỆM VỤ ĐẶC BIỆT'+(name?' · '+UP(name):''),w/2,14,1.2,'center');
+  hline(ctx,m,w-m,20);
+  const bottom=h-22,top=24,f=fit(ctx,$('kidMission').value.trim()||' ',w-2*m-4,bottom-top,{max:24,min:12,weight:700,fam:SERIF,lh:1.2,maxLines:3});
+  const y0=top+(bottom-top-f.lines.length*f.lh)/2;ctx.fillStyle=INK;ctx.textAlign='center';
+  f.lines.forEach((l,i)=>ctx.fillText(l,w/2,Math.round(y0+(i+1)*f.lh-f.lh*0.2)));ctx.textAlign='left';
+  hline(ctx,m,w-m,h-19);box(ctx,m,h-15,11,false);setFont(ctx,11,700);ctx.fillStyle=INK;ctx.fillText('Hoàn thành',m+16,h-6);
+  if(reward){setFont(ctx,11,700);const hw=ctx.measureText('Hoàn thành').width,t=ellipsize(ctx,reward,w-m-(m+16+hw)-28);const tw=ctx.measureText(t).width;ctx.textAlign='right';ctx.fillText(t,w-m,h-6);ctx.textAlign='left';gift(ctx,w-m-tw-15,h-16);}
+}
+
 function drawTodo(ctx,w,h){
   const m=9,now=new Date(),p=dateParts(now);
   setFont(ctx,10,700);ctx.fillStyle=accent();ctx.fillRect(m,9,4,4);
@@ -372,12 +444,13 @@ function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
 function render(){
   const size=$('optSize').value,g=SIZES[size],cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}`;
 }
-let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;render();save();});}
+function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);}
+let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();});}
 
 function setTab(t){tab=t;for(const b of document.querySelectorAll('nav.tabs button'))b.setAttribute('aria-selected',b.dataset.t===t);
   for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;schedule();}
