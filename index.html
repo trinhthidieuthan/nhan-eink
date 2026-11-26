@@ -317,6 +317,7 @@ function box(ctx,x,y,s,filled){ctx.fillStyle=INK;ctx.fillRect(x,y,s,1);ctx.fillR
 function tasks(id){return $(id).value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>/^[xX✓]\s+/.test(s)?{t:s.replace(/^[xX✓]\s+/,''),done:true}:{t:s,done:false});}
 const UP=s=>String(s).toLocaleUpperCase('vi');
 function shortDate(){const d=new Date();return `${['CN','T2','T3','T4','T5','T6','T7'][d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;}
+function dateTime(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${shortDate()} · ${p(d.getHours())}:${p(d.getMinutes())}`;}
 
 function drawKids(ctx,w,h){({stars:kidsStars,duo:kidsDuo,hero:kidsHero})[$('kidStyle').value](ctx,w,h);}
 function kidsStars(ctx,w,h){
@@ -327,18 +328,20 @@ function kidsStars(ctx,w,h){
   setFont(ctx,13,800);ctx.fillText(ellipsize(ctx,title,w-m*2-18-cw-6),m+16,15);
   setFont(ctx,12,700);ctx.textAlign='right';ctx.fillText(cnt,w-m-14,15);ctx.textAlign='left';star(ctx,w-m-6,10,5.5,true);
   ctx.fillStyle=INK;ctx.fillRect(2,20,w-4,2);
-  const top=25,bottom=reward?h-20:h-3,avail=bottom-top;
+  const top=25,bottom=h-20,avail=bottom-top;
   let size=14,rowH;for(;size>=10;size--){rowH=size+6;if(list.length*rowH<=avail)break;}
   const rows=Math.max(1,Math.floor(avail/rowH)),show=list.slice(0,rows);
   show.forEach((it,i)=>{const y=top+i*rowH,cy=y+rowH/2;star(ctx,m+6,cy,Math.min(6.5,rowH/2-0.5),it.done);
     setFont(ctx,size,it.done?500:600);ctx.fillStyle=INK;const tx=m+17,t=ellipsize(ctx,it.t,w-tx-m);const by=Math.round(cy+size*0.36);ctx.fillText(t,tx,by);
     if(it.done)hline(ctx,tx,tx+ctx.measureText(t).width,Math.round(by-size*0.32));});
   if(!list.length){setFont(ctx,12,500,SERIF);ctx.fillStyle=INK;ctx.fillText('Thêm nhiệm vụ cho con nhé!',m+4,top+20);}
-  if(reward){hline(ctx,m,w-m,h-18);gift(ctx,m,h-15);setFont(ctx,11,700);ctx.fillStyle=INK;ctx.fillText(ellipsize(ctx,'Thưởng: '+reward,w-m*2-16),m+16,h-5);}
+  hline(ctx,m,w-m,h-18);
+  setFont(ctx,10,600);ctx.fillStyle=accent();const dt=dateTime(),dtw=ctx.measureText(dt).width;ctx.textAlign='right';ctx.fillText(dt,w-m,h-5);ctx.textAlign='left';
+  if(reward){gift(ctx,m,h-15);setFont(ctx,11,700);ctx.fillStyle=INK;const rw2=w-m*2-16-dtw-8;let rs=11;while(rs>9&&ctx.measureText(reward).width>rw2)setFont(ctx,--rs,700);ctx.fillText(ellipsize(ctx,reward,rw2),m+16,h-5);}
 }
 function kidsDuo(ctx,w,h){
   const m=5;setFont(ctx,13,800);ctx.fillStyle=INK;ctx.fillText('NHIỆM VỤ HÔM NAY',m,15);
-  setFont(ctx,10,500);ctx.fillStyle=accent();ctx.textAlign='right';ctx.fillText(shortDate(),w-m,14);ctx.textAlign='left';
+  setFont(ctx,10,500);ctx.fillStyle=accent();ctx.textAlign='right';ctx.fillText(dateTime(),w-m,14);ctx.textAlign='left';
   ctx.fillStyle=INK;ctx.fillRect(2,19,w-4,2);const mid=Math.round(w/2);ctx.fillRect(mid,25,1,h-29);
   [[$('kid1Name').value,'kid1Tasks',m],[$('kid2Name').value,'kid2Tasks',mid+6]].forEach(([name,id,x])=>{
     const cw=(x===m?mid-6:w-m)-x,list=tasks(id),done=list.filter(t=>t.done).length;
