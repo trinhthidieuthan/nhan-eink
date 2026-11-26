@@ -45,6 +45,9 @@
   .card img{width:100%;height:auto;aspect-ratio:250/122;image-rendering:pixelated;border:1px solid #e5e2db;border-radius:4px;background:#fff;display:block}
   .card.sel{border:2px solid var(--red);padding:7px;box-shadow:0 4px 14px rgba(179,38,30,.12)}
   .card.sel .nm::before{content:"● ";color:var(--red)}
+  .live{margin-top:16px;border:1px solid var(--line);border-left:3px solid var(--red);border-radius:10px;background:var(--card);padding:12px 14px;font-size:14px}
+  .live p{margin:6px 0}
+  .live .small-note{font-size:12px;color:var(--muted)}
   details.opts{margin-top:16px;padding:14px 20px}
   details.opts summary,details.more summary{cursor:pointer;font-size:14px;color:var(--ink)}
   .hint-inline{color:var(--muted);font-size:12px;margin-left:4px}
@@ -76,7 +79,7 @@
     .msg{font-size:12px}
   }
   .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;align-items:start}
-  @media (max-width:820px){.grid{grid-template-columns:1fr}.preview{order:-1;position:static}}
+  @media (max-width:820px){.grid{grid-template-columns:1fr}.grid .preview{order:-1;position:static}}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
   .panel[hidden]{display:none}
   label{display:block;font-size:13px;color:var(--muted);margin:0 0 14px}
@@ -185,7 +188,7 @@
         <label data-clk="bigdate"><span>Câu nhắc dưới đồng hồ</span><input id="clkQuote" type="text" maxlength="60" placeholder="Hãy làm mỗi việc như việc cuối đời."></label>
         <label><span>Ngày (mặc định hôm nay)</span><input id="clkDate" type="date"></label>
         <label><span>Dòng ghi chú góc dưới (không bắt buộc)</span><input id="clkNote" type="text" maxlength="20" placeholder="Ví dụ: Nhà Vy Viên"></label>
-        <p class="note">Mặt lịch/đồng hồ của trang gốc do phần mềm trong đồng hồ tự chạy. Ở đây là ảnh tĩnh: giờ và ngày đứng yên từ lúc gửi. Gửi ảnh từ trang này sẽ thay mặt đồng hồ đang chạy; muốn quay lại đồng hồ tự chạy, chọn lại giao diện ở trang gốc.</p>
+        <p class="note">Các mẫu ở đây gửi lên dạng <b>ảnh tĩnh</b>: giờ đứng yên từ lúc gửi. Muốn giờ tự chạy, dùng nút <b>Đồng hồ tự chạy</b> / <b>Lịch tự chạy</b> bên khung xem trước.</p>
       </section>
 
       <section class="panel" data-p="tpl" hidden>
@@ -264,6 +267,12 @@
         <button id="btnSend" class="primary" disabled>Gửi lên màn hình</button>
         <button id="btnCancel" hidden>Dừng</button>
         <button id="btnPng">Tải ảnh PNG</button>
+      </div>
+      <div id="liveBox" class="live" hidden>
+        <b>⏱ Muốn giờ tự chạy?</b>
+        <p>Nút <i>Gửi</i> ở trên gửi <u>ảnh tĩnh</u> nên giờ đứng yên. Hai nút dưới đây bảo đồng hồ dùng mặt đồng hồ/lịch <u>có sẵn trong máy</u> — tự cập nhật mỗi phút.</p>
+        <div class="actions"><button id="btnLiveClock">Đồng hồ tự chạy</button><button id="btnLiveCal">Lịch tự chạy</button></div>
+        <p class="small-note">Bấm lại cùng nút để chuyển lần lượt sang mặt khác. Muốn chọn đúng một mặt cụ thể, dùng mục “Chọn giao diện đồng hồ” ở trang gốc.</p>
       </div>
       <progress id="prog" value="0" max="100" hidden></progress>
       <div id="msg" class="msg"></div>
@@ -780,7 +789,7 @@ function kidFields(){const s=$('kidStyle').value;for(const el of document.queryS
   const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.some(p=>p.includes(el.dataset.split));}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();if(typeof scheduleThumbs==='function')scheduleThumbs();});}
 
-function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;schedule();}
+function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;$('liveBox').hidden=t!=='clk';schedule();}
 
 /* ---------- Thư viện chọn màn hình ---------- */
 const LAYOUTS=[
@@ -910,6 +919,20 @@ async function send(){
   finally{ble.busy=false;ble.job=null;$('btnCancel').hidden=true;updateConn();}
 }
 $('btnConnect').onclick=connect;$('btnSend').onclick=send;
+/* Chuyển đồng hồ sang mặt đồng hồ (mode 2) hoặc lịch (mode 1) có sẵn trong máy — giờ tự chạy.
+   Cùng lệnh cài giờ 0x20 mà trang gốc dùng cho nút “Chuyển sang chế độ đồng hồ” / “Lịch tháng”. */
+async function liveMode(mode){
+  if(ble.busy)return;
+  if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch||ble.model!==2)return;}
+  ble.busy=true;updateConn();
+  try{const ts=Math.floor(Date.now()/1000),tz=Math.round(-new Date().getTimezoneOffset()/60);
+    await ble.ch.writeValueWithResponse(Uint8Array.of(CMD.SET_TIME,ts>>>24&255,ts>>>16&255,ts>>>8&255,ts&255,tz&255,mode));
+    log(`Chuyển sang ${mode===2?'đồng hồ':'lịch'} tự chạy`);
+    say(`Đã bật ${mode===2?'đồng hồ':'lịch'} tự chạy và cài lại giờ. Màn sẽ làm mới trong giây lát; bấm lại nút để đổi sang mặt khác.`);
+  }catch(e){say('Chưa gửi được: '+e.message,true);log('Lỗi: '+e.message);}
+  finally{ble.busy=false;updateConn();}
+}
+$('btnLiveClock').onclick=()=>liveMode(2);$('btnLiveCal').onclick=()=>liveMode(1);
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
 
 for(const id of ['kidStyle','clkStyle','splitMode','tplKind'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
