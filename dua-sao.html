@@ -192,7 +192,64 @@ if(!S.v2){const k1=S.kids.find(k=>k.id==='k1'),k2=S.kids.find(k=>k.id==='k2');
   if(k2&&k2.icon==='🐻'){k2.icon='🐭';if(k2.sub==='Gấu con dũng cảm')k2.sub='Chuột con lanh lợi';}S.v2=true;}
 /* Bản 3: tên đầy đủ Lam Vy / Lam Viên (chỉ khi vẫn là tên mặc định cũ) */
 if(!S.v3){for(const [id,old,nw] of [['k1','Vy','Lam Vy'],['k2','Viên','Lam Viên']]){const k=S.kids.find(x=>x.id===id);if(k&&k.name===old)k.name=nw;}S.v3=true;}
-function save(){S.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}}
+function save(){S.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}syncPush();}
+
+/* ================= Đồng bộ giữa các máy (Firebase Realtime Database của gia đình) =================
+   - Mỗi gia đình một “mã gia đình” dài, ngẫu nhiên; dữ liệu nằm ở /families/<mã>/state.
+   - Máy nào thay đổi thì đẩy lên; máy khác nhận ngay (bản mới hơn thắng).
+   - Cấu hình chỉ lưu trên từng máy, không nằm trong dữ liệu đồng bộ.                                  */
+const SYNC_KEY='dua-sao-sync',FB='https://www.gstatic.com/firebasejs/10.12.2/';
+let SY={cfg:null,code:'',on:false,joined:false};try{Object.assign(SY,JSON.parse(localStorage.getItem(SYNC_KEY))||{});}catch(_){}
+const syncRT={ref:null,set:null,status:'',lastAt:0,timer:0,applying:false};
+function syncSaveCfg(){try{localStorage.setItem(SYNC_KEY,JSON.stringify({cfg:SY.cfg,code:SY.code,on:SY.on,joined:SY.joined}));}catch(_){}}
+function newFamilyCode(){const a='abcdefghjkmnpqrstuvwxyz23456789',r=crypto.getRandomValues(new Uint8Array(20));return [...r].map(x=>a[x%a.length]).join('');}
+function parseFirebaseConfig(text,dbUrl){
+  const src=String(text).replace(/(^|[^:"'\w])\/\/[^\n]*/g,'$1'); // bỏ dòng ghi chú, giữ nguyên https://
+  const m=src.match(/\{[\s\S]*\}/);if(!m)throw Error('Chưa thấy đoạn firebaseConfig = { … }.');
+  const json=m[0].replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g,'$1"$2":').replace(/'/g,'"').replace(/,\s*}/g,'}');
+  let c;try{c=JSON.parse(json);}catch(_){throw Error('Không đọc được đoạn cấu hình. Hãy dán nguyên khối firebaseConfig.');}
+  if(dbUrl)c.databaseURL=dbUrl.trim();
+  if(!c.apiKey||!c.projectId)throw Error('Thiếu apiKey hoặc projectId.');
+  if(!c.databaseURL)throw Error('Thiếu địa chỉ Realtime Database (databaseURL). Dán thêm vào ô bên dưới.');
+  return {apiKey:c.apiKey,authDomain:c.authDomain,databaseURL:c.databaseURL,projectId:c.projectId,appId:c.appId};
+}
+function syncShareLink(){const p=btoa(unescape(encodeURIComponent(JSON.stringify({c:SY.cfg,k:SY.code})))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return location.origin+location.pathname+'#dongbo='+p;}
+function syncSetStatus(s){syncRT.status=s;const el=$('syncState');if(el)el.textContent=s;renderTop();}
+async function syncStart(){
+  if(!SY.cfg||!SY.code)return;
+  try{
+    syncSetStatus('Đang kết nối đồng bộ…');
+    const [fa,fu,fd]=await Promise.all([import(FB+'firebase-app.js'),import(FB+'firebase-auth.js'),import(FB+'firebase-database.js')]);
+    const app=fa.getApps().find(a=>a.name==='vyvien')||fa.initializeApp(SY.cfg,'vyvien');
+    await fu.signInAnonymously(fu.getAuth(app));
+    const db=fd.getDatabase(app),r=fd.ref(db,'families/'+SY.code+'/state');
+    syncRT.ref=r;syncRT.set=v=>fd.set(r,v);SY.on=true;syncSaveCfg();
+    fd.onValue(r,snap=>syncOnRemote(snap.val()),err=>syncSetStatus('Lỗi đồng bộ: '+(err.message||err)));
+  }catch(e){syncSetStatus('Chưa đồng bộ được: '+(e.code||e.message||e));}
+}
+function syncOnRemote(v){ // dữ liệu từ máy khác tới
+  syncRT.lastAt=Date.now();
+  if(!v){if(!SY.joined){SY.joined=true;syncSaveCfg();}syncPush(true);syncSetStatus('Đồng bộ ✓ (máy đầu tiên)');return;}
+  let remote;try{remote=JSON.parse(v.json);}catch(_){return;}
+  if(!remote||!remote.kids||!remote.tasks)return;
+  const first=!SY.joined;
+  if(first||(remote.savedAt||0)>(S.savedAt||0)){
+    if(first){try{localStorage.setItem(KEY+'-truoc-dong-bo',JSON.stringify(S));}catch(_){}} // giữ bản cũ của máy này phòng khi cần
+    syncRT.applying=true;S=remote;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}syncRT.applying=false;
+    SY.joined=true;syncSaveCfg();render();
+  }
+  syncSetStatus('Đồng bộ ✓ '+pad(new Date().getHours())+':'+pad(new Date().getMinutes()));
+}
+function syncPush(now){
+  if(!SY.on||!syncRT.set||syncRT.applying||(!SY.joined&&!now))return;
+  clearTimeout(syncRT.timer);syncRT.timer=setTimeout(()=>{syncRT.set({json:JSON.stringify(S),at:S.savedAt||Date.now()}).catch(e=>syncSetStatus('Chưa gửi được: '+(e.code||e.message)));},now?0:400);
+}
+function syncStop(){SY.on=false;SY.joined=false;syncSaveCfg();syncSetStatus('Đã tắt đồng bộ');location.reload();}
+/* Mở link chia sẻ (#dongbo=…) trên máy khác: tự nhận cấu hình */
+(function(){const m=location.hash.match(/dongbo=([\w-]+)/);if(!m)return;
+  try{const o=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));if(o.c&&o.k){SY.cfg=o.c;SY.code=o.k;SY.on=true;SY.joined=false;syncSaveCfg();}}catch(_){}
+  history.replaceState(null,'',location.pathname+location.search);})();
 
 /* ================= Tiện ích ngày ================= */
 const pad=n=>String(n).padStart(2,'0');
@@ -232,7 +289,7 @@ const ORDER={sang:0,trua:1,chieu:2,toi:3,ca:4};
 function sortT(list){return [...list].sort((a,b)=>(b.prio-a.prio)||(ORDER[a.session]-ORDER[b.session])||(a.deadline||'99').localeCompare(b.deadline||'99'));}
 
 function renderTop(){const d=new Date();$('date').textContent=`· ${WD[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
-  $('sync').textContent=S.savedAt?`Lưu lúc ${pad(new Date(S.savedAt).getHours())}:${pad(new Date(S.savedAt).getMinutes())}`:'';}
+  $('sync').textContent=SY.on&&syncRT.status?syncRT.status:(S.savedAt?`Lưu lúc ${pad(new Date(S.savedAt).getHours())}:${pad(new Date(S.savedAt).getMinutes())}`:'');}
 function renderRace(){$('race').innerHTML=raceHTML();}
 function raceHTML(){
   const d=today(),ps=S.kids.map(k=>({k,...progress(k.id,d)}));
@@ -302,6 +359,18 @@ function renderSet(){
       <label class="f" style="display:flex;gap:6px;align-items:center;margin-top:16px"><input id="fullSel" type="checkbox" ${S.fullAlways?'checked':''} style="width:22px;min-height:22px"> Giữ toàn màn hình cả khi thoát</label></div>
     <h3>Mã PIN bố mẹ</h3><p class="small muted">Có PIN thì con không tự vào Cài đặt hay tự đổi quà được. Để trống nếu không cần.</p>
     <div class="row"><input id="pinSet" type="password" inputmode="numeric" maxlength="6" placeholder="${S.pin?'Đã đặt PIN — nhập PIN mới để đổi':'Chưa đặt PIN'}"><button data-act="setPin">Lưu PIN</button>${S.pin?'<button class="ghost" data-act="clearPin">Bỏ PIN</button>':''}</div>
+    <h3>Đồng bộ giữa các máy</h3>
+    ${SY.on?`<p><b id="syncState">${esc(syncRT.status||'Đang kết nối…')}</b></p>
+      <p class="small">Mã gia đình: <code>${esc(SY.code)}</code></p>
+      <p class="note">Mở link dưới đây trên máy khác (điện thoại, máy tính bảng…) để máy đó tự đồng bộ. Giữ kín link này — ai có link đều xem và sửa được dữ liệu.</p>
+      <div class="row"><input id="shareLink" readonly value="${esc(syncShareLink())}"><button data-act="copyLink" style="flex:0 0 auto">Sao chép link</button></div>
+      <div class="bar-act"><button class="ghost" data-act="syncOff">Tắt đồng bộ trên máy này</button></div>`
+    :`<p class="small muted">Để máy đọc sách và điện thoại cùng thấy một dữ liệu. Cần một dự án Firebase (miễn phí) của gia đình — xem hướng dẫn kèm theo.</p>
+      <label class="f">Dán đoạn <b>firebaseConfig</b> (từ Firebase → Cài đặt dự án → Ứng dụng web)<textarea id="fbCfg" placeholder="const firebaseConfig = { apiKey: &quot;…&quot;, … };" style="min-height:120px;font-family:monospace;font-size:13px">${SY.cfg?esc(JSON.stringify(SY.cfg,null,1)):''}</textarea></label>
+      <label class="f" style="margin-top:6px">Địa chỉ Realtime Database (nếu đoạn trên chưa có <i>databaseURL</i>)<input id="fbDb" placeholder="https://….firebasedatabase.app" value=""></label>
+      <div class="row" style="margin-top:6px"><label class="f">Mã gia đình<input id="fbCode" value="${esc(SY.code||newFamilyCode())}"></label><button data-act="newCode" style="flex:0 0 auto;margin-top:16px">Tạo mã mới</button></div>
+      <div class="bar-act"><button class="solid" data-act="syncOn">Bật đồng bộ</button></div>
+      <p class="small muted" id="syncState">${esc(syncRT.status||'')}</p>`}
     <h3>Sao lưu dữ liệu</h3><p class="note">Dữ liệu lưu ngay trên máy này (trình duyệt). Nên tải bản sao lưu thỉnh thoảng; khi đổi máy thì mở bản sao lưu ở máy mới.</p>
     <div class="bar-act"><button data-act="export">Tải bản sao lưu</button><button data-act="import">Mở bản sao lưu…</button><input id="impFile" type="file" accept="application/json" hidden>
       <button class="ghost" data-act="resetToday">Bỏ đánh dấu hôm nay</button><button class="ghost" data-act="resetAll">Xóa hết, làm lại từ đầu</button></div>
@@ -377,6 +446,14 @@ document.addEventListener('click',e=>{
   else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),u=URL.createObjectURL(b),l=document.createElement('a');l.href=u;l.download=`dua-sao-${dkey(new Date())}.json`;l.click();setTimeout(()=>URL.revokeObjectURL(u),2000);}
   else if(a==='import')$('impFile').click();
   else if(a==='resetToday'){if(confirm('Bỏ mọi đánh dấu hôm nay? (Sao đã cộng sẽ được trừ lại)')){const k=dkey(today()),m=S.done[k]||{};for(const key in m){const [tid,kd]=key.split('|'),t=S.tasks.find(x=>x.id===tid);if(!t)continue;for(const w of kd==='shared'?S.kids.map(x=>x.id):[kd]){S.stars[w]-=t.stars;addLog(w,-t.stars,'Bỏ đánh dấu: '+t.title,'task');}}delete S.done[k];save();render();}}
+  else if(a==='newCode'){$('fbCode').value=newFamilyCode();}
+  else if(a==='syncOn'){try{const cfg=parseFirebaseConfig($('fbCfg').value,$('fbDb').value),code=$('fbCode').value.trim();
+      if(!/^[a-z0-9]{16,}$/.test(code))throw Error('Mã gia đình cần ít nhất 16 chữ thường hoặc số.');
+      SY.cfg=cfg;SY.code=code;SY.on=true;SY.joined=false;syncSaveCfg();
+      if(S&&!confirm('Bật đồng bộ? Nếu mã gia đình này đã có dữ liệu (từ máy khác), máy này sẽ dùng dữ liệu đó. Bản cũ trên máy này vẫn được giữ một bản dự phòng.')){SY.on=false;syncSaveCfg();return;}
+      syncStart().then(render);render();}catch(e){alert(e.message);}}
+  else if(a==='syncOff'){if(confirm('Tắt đồng bộ trên máy này? Dữ liệu vẫn giữ trên máy, chỉ không cập nhật với máy khác nữa.'))syncStop();}
+  else if(a==='copyLink'){const v=$('shareLink').value;(navigator.clipboard?.writeText(v)||Promise.reject()).then(()=>alert('Đã sao chép link. Gửi sang máy kia rồi mở bằng Chrome.')).catch(()=>{$('shareLink').select();alert('Bấm giữ ô link để sao chép.');});}
   else if(a==='resetAll'){if(confirm('Xóa toàn bộ dữ liệu và làm lại từ đầu? Không hoàn tác được.')){S=defaults();save();parentOK=false;render();}}
 });
 document.addEventListener('change',e=>{
@@ -404,6 +481,7 @@ $('restBtn').onclick=()=>restEnter(true);
 if(/[?&]nghi=1/.test(location.search))restEnter(false);
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('dua-sao-sw.js').catch(()=>{});
 render();armIdle();
+if(SY.on)syncStart();
 </script>
 </body>
 </html>
