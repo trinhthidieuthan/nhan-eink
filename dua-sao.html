@@ -132,10 +132,10 @@ const KEY='dua-sao-v1';
 const uid=()=>Math.random().toString(36).slice(2,9);
 const SESS={sang:'Sáng',chieu:'Chiều',toi:'Tối',ca:'Cả ngày'};
 const WD=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'],WS=['CN','T2','T3','T4','T5','T6','T7'];
-const ICONS=['🐝','🐻','🐰','🦊','🐼','🐱','🐶','🦄','🐥','🐴','🐬','🦁','🐢','🌟'];
+const ICONS=['🐶','🐭','🐹','🐝','🐻','🐰','🦊','🐼','🐱','🐶','🦄','🐥','🐴','🐬','🦁','🐢','🌟'];
 function defaults(){
   return {
-    kids:[{id:'k1',name:'Vy',sub:'Ong nhỏ chăm chỉ',icon:'🐝'},{id:'k2',name:'Viên',sub:'Gấu con dũng cảm',icon:'🐻'}],
+    kids:[{id:'k1',name:'Vy',sub:'Cún con chăm chỉ',icon:'🐶'},{id:'k2',name:'Viên',sub:'Chuột con lanh lợi',icon:'🐭'}],
     tasks:[
       {id:uid(),title:'Đánh răng, rửa mặt',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
       {id:uid(),title:'Uống hết cốc sữa',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
@@ -149,6 +149,10 @@ function defaults(){
   };
 }
 let S;try{S=JSON.parse(localStorage.getItem(KEY))||defaults();}catch(_){S=defaults();}
+/* Cập nhật hình đại diện mặc định cho máy đã mở bản cũ (chỉ khi chưa tự đổi) */
+if(!S.v2){const k1=S.kids.find(k=>k.id==='k1'),k2=S.kids.find(k=>k.id==='k2');
+  if(k1&&k1.icon==='🐝'){k1.icon='🐶';if(k1.sub==='Ong nhỏ chăm chỉ')k1.sub='Cún con chăm chỉ';}
+  if(k2&&k2.icon==='🐻'){k2.icon='🐭';if(k2.sub==='Gấu con dũng cảm')k2.sub='Chuột con lanh lợi';}S.v2=true;}
 function save(){S.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}}
 
 /* ================= Tiện ích ngày ================= */
