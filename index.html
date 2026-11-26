@@ -103,7 +103,7 @@
           <label style="flex:0 0 30%"><span>% đã dùng</span><input id="m2Pct" type="text" inputmode="numeric" maxlength="3"></label>
         </div>
         <label class="check"><input id="dashLeft" type="checkbox" checked> Ghi “còn …%” dưới mỗi thanh</label>
-        <label class="check"><input id="dashUpper" type="checkbox" checked> Viết in hoa toàn bộ chữ</label>
+        <label class="check"><input id="dashUpper" type="checkbox" checked> Viết in hoa tên</label>
         <label><span>Tiêu đề cột phải</span><input id="dashTitle" type="text" maxlength="14" placeholder="Hôm nay"></label>
         <label><span>Lịch hôm nay, mỗi dòng một việc</span>
           <textarea id="dashItems" placeholder="Cả ngày | ! Tuần lễ sách&#10;16:30 Gặp chị Lan&#10;x Gửi báo cáo"></textarea></label>
@@ -250,15 +250,11 @@ function meter(ctx,x,x2,label,pct,y,showLeft){
   if(showLeft){setFont(ctx,10,500);ctx.fillText(`còn ${100-pct}%`,x,by+17);}
 }
 function drawDash(ctx,w,h){
-  if(!$('dashUpper').checked)return drawDashInner(ctx,w,h);
-  const f=ctx.fillText.bind(ctx),m=ctx.measureText.bind(ctx),U=t=>String(t).toLocaleUpperCase('vi');
-  ctx.fillText=(t,...a)=>f(U(t),...a);ctx.measureText=t=>m(U(t));
-  try{drawDashInner(ctx,w,h);}finally{delete ctx.fillText;delete ctx.measureText;}
-}
-function drawDashInner(ctx,w,h){
-  const d=new Date(),wd=['CN','T2','T3','T4','T5','T6','T7'][d.getDay()],m=4,showLeft=$('dashLeft').checked;
-  ctx.fillStyle=INK;setFont(ctx,15,700);ctx.fillText(`${wd} ${d.getDate()}/${d.getMonth()+1}`,m,15);
-  const dw=ctx.measureText(`${wd} ${d.getDate()}/${d.getMonth()+1}`).width;
+  const d=new Date(),wd=['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'][d.getDay()],m=4,showLeft=$('dashLeft').checked;
+  const ds=`${wd} Ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  let fs=15;setFont(ctx,fs,700);while(fs>11&&ctx.measureText(ds).width>w*0.66)setFont(ctx,--fs,700);
+  ctx.fillStyle=INK;ctx.fillText(ds,m,15);
+  const dw=ctx.measureText(ds).width;
   const st=$('dashStatus').value.trim()||`Cập nhật ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   setFont(ctx,10,500);ctx.fillStyle=accent();ctx.textAlign='right';ctx.fillText(ellipsize(ctx,st,w-m*2-dw-10),w-m,14);ctx.textAlign='left';
   ctx.fillStyle=INK;ctx.fillRect(2,18,w-4,2);
@@ -266,7 +262,7 @@ function drawDashInner(ctx,w,h){
   // Cột trái: tên + 2 thanh
   const name=$('dashName').value.trim(),icon=$('dashIcon').value;let x=m;
   if(icon!=='none'){drawIcon(ctx,icon,x+6,31,name);x+=17;}
-  const nm=name||'Tên của bạn';let ns=13;setFont(ctx,ns,700);while(ns>10&&ctx.measureText(nm).width>col-x-4)setFont(ctx,--ns,700);
+  const nm=$('dashUpper').checked?(name||'Tên của bạn').toLocaleUpperCase('vi'):(name||'Tên của bạn');let ns=13;setFont(ctx,ns,700);while(ns>10&&ctx.measureText(nm).width>col-x-4)setFont(ctx,--ns,700);
   ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,nm,col-x-4),x,36);
   const gap=showLeft?37:30,y1=showLeft?52:58;
   meter(ctx,m,col-6,$('m1Label').value,$('m1Pct').value,y1,showLeft);
