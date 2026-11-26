@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nhãn của tôi · e-ink</title>
+<title>Diệu Thân · e-ink</title>
 <style>
   :root{
     --paper:#f7f5f0; --ink:#1d1d1b; --muted:#77736b; --line:#dedad2;
@@ -44,7 +44,36 @@
   .card img{width:100%;height:auto;aspect-ratio:250/122;image-rendering:pixelated;border:1px solid #e5e2db;border-radius:4px;background:#fff;display:block}
   .card.sel{border:2px solid var(--red);padding:7px;box-shadow:0 4px 14px rgba(179,38,30,.12)}
   .card.sel .nm::before{content:"● ";color:var(--red)}
-  @media (max-width:520px){.cards{grid-template-columns:repeat(2,1fr);gap:8px}.card{font-size:12px;padding:6px}.card.sel{padding:5px}}
+  details.opts{margin-top:16px;padding:14px 20px}
+  details.opts summary,details.more summary{cursor:pointer;font-size:14px;color:var(--ink)}
+  .hint-inline{color:var(--muted);font-size:12px;margin-left:4px}
+  details.more summary{color:var(--muted);font-size:12px}
+  @media (max-width:520px){
+    .wrap{padding:14px 14px 40px}
+    header{flex-wrap:nowrap;align-items:center;padding-bottom:12px}
+    h1{font-size:24px}
+    header .sub{font-size:12px;margin-top:2px}
+    .conn{flex-direction:column;align-items:flex-end;gap:2px}
+    .conn button{padding:7px 12px;min-height:36px;font-size:13px;white-space:nowrap}
+    header > div:first-child{min-width:0}
+    .conn .status{font-size:11px;order:2}
+    .gallery{margin-top:14px}
+    .gal-head h2{font-size:17px}
+    #galCount{display:none}
+    .cats{flex-wrap:wrap;gap:6px;overflow:visible;padding-bottom:0;margin-bottom:10px}
+    .cats button{min-height:30px;padding:4px 11px;font-size:13px}
+    .cards{grid-template-columns:repeat(2,1fr);gap:8px}
+    .card{font-size:12px;padding:6px}.card.sel{padding:5px}
+    .device{padding:10px 10px 16px;border-radius:14px}
+    .device .chin{margin-top:8px}
+    .meta{margin:6px 2px 10px}
+    .meta span:last-child{display:none}
+    .actions button{flex:1}
+    #btnPng{flex:0 0 auto}
+    .panel{padding:14px;border-radius:12px}
+    .grid{gap:16px}
+    .msg{font-size:12px}
+  }
   .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;align-items:start}
   @media (max-width:820px){.grid{grid-template-columns:1fr}.preview{order:-1;position:static}}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
@@ -81,8 +110,8 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Nhãn của tôi<em>.</em></h1>
-      <p class="sub">Nhãn tối giản cho màn e-ink 2.13" và 2.9", gửi qua Bluetooth.</p>
+      <h1>Diệu Thân<em>.</em></h1>
+      <p class="sub">Màn e-ink 2.13" và 2.9" · gửi qua Bluetooth</p>
     </div>
     <div class="conn">
       <span id="status" class="status">Chưa kết nối</span>
@@ -218,12 +247,13 @@
         <label><span>Chú thích dưới ảnh (không bắt buộc)</span><input id="photoCaption" type="text" maxlength="32"></label>
       </section>
 
-      <section class="panel" style="margin-top:16px">
-        <label class="check"><input id="optRed" type="checkbox" checked> Dùng điểm nhấn đỏ</label>
+      <details class="panel opts">
+        <summary>Tùy chọn hiển thị <span class="hint-inline">màu đỏ, viền, cỡ màn</span></summary>
+        <label class="check" style="margin-top:14px"><input id="optRed" type="checkbox" checked> Dùng điểm nhấn đỏ</label>
         <label class="check"><input id="optFrame" type="checkbox"> Viền mảnh quanh nhãn</label>
         <label style="margin:8px 0 0"><span>Kích thước màn (tự chọn khi đã kết nối)</span>
           <select id="optSize"><option value="213">2.13" · 250 × 122</option><option value="290">2.9" · 296 × 128</option></select></label>
-      </section>
+      </details>
     </div>
 
     <div class="preview">
@@ -234,10 +264,11 @@
         <button id="btnCancel" hidden>Dừng</button>
         <button id="btnPng">Tải ảnh PNG</button>
       </div>
-      <label class="check" style="margin-top:12px;font-size:13px;color:var(--muted)"><input id="optAll" type="checkbox"> Hiện mọi thiết bị Bluetooth (khi không thấy màn trong danh sách)</label>
       <progress id="prog" value="0" max="100" hidden></progress>
       <div id="msg" class="msg"></div>
-      <details><summary>Nhật ký Bluetooth</summary><div id="log"></div></details>
+      <details class="more"><summary>Không thấy màn hình? · Nhật ký Bluetooth</summary>
+        <label class="check" style="margin-top:10px;font-size:13px"><input id="optAll" type="checkbox"> Hiện mọi thiết bị Bluetooth khi quét</label>
+        <div id="log"></div></details>
     </div>
   </div>
 </div>
