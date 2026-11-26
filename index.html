@@ -78,7 +78,8 @@
   </header>
 
   <nav class="tabs" role="tablist">
-    <button role="tab" data-t="todo" aria-selected="true">Việc hôm nay</button>
+    <button role="tab" data-t="dash" aria-selected="true">Bảng của tôi</button>
+    <button role="tab" data-t="todo" aria-selected="false">Việc hôm nay</button>
     <button role="tab" data-t="cal" aria-selected="false">Ngày + lịch âm</button>
     <button role="tab" data-t="quote" aria-selected="false">Lời nhắc</button>
     <button role="tab" data-t="photo" aria-selected="false">Ảnh</button>
@@ -86,6 +87,28 @@
 
   <div class="grid">
     <div>
+      <section class="panel" data-p="dash" hidden>
+        <div class="row">
+          <label><span>Tên hiển thị</span><input id="dashName" type="text" maxlength="24" placeholder="Tên của bạn"></label>
+          <label style="flex:0 0 38%"><span>Biểu tượng</span>
+            <select id="dashIcon"><option value="star">✳ Sao</option><option value="heart">♥ Trái tim</option><option value="flower">✿ Bông hoa</option><option value="mono">Chữ cái đầu</option><option value="none">Không</option></select></label>
+        </div>
+        <label><span>Dòng trạng thái góc trên (để trống: tự ghi giờ cập nhật)</span><input id="dashStatus" type="text" maxlength="32" placeholder="Ví dụ: Hẹn 14:00"></label>
+        <div class="row">
+          <label><span>Thanh 1</span><input id="m1Label" type="text" maxlength="12"></label>
+          <label style="flex:0 0 30%"><span>% đã dùng</span><input id="m1Pct" type="text" inputmode="numeric" maxlength="3"></label>
+        </div>
+        <div class="row">
+          <label><span>Thanh 2</span><input id="m2Label" type="text" maxlength="12"></label>
+          <label style="flex:0 0 30%"><span>% đã dùng</span><input id="m2Pct" type="text" inputmode="numeric" maxlength="3"></label>
+        </div>
+        <label class="check"><input id="dashLeft" type="checkbox" checked> Ghi “còn …%” dưới mỗi thanh</label>
+        <label><span>Tiêu đề cột phải</span><input id="dashTitle" type="text" maxlength="14" placeholder="Hôm nay"></label>
+        <label><span>Lịch hôm nay, mỗi dòng một việc</span>
+          <textarea id="dashItems" placeholder="Cả ngày | ! Tuần lễ sách&#10;16:30 Gặp chị Lan&#10;x Gửi báo cáo"></textarea></label>
+        <p class="hint">Ghi giờ ở đầu dòng (<b>16:30 …</b>) hoặc dùng dấu <b>|</b> (<b>Cả ngày | …</b>). <b>!</b> trước nội dung thêm dấu đỏ, <b>x</b> ở đầu dòng là việc đã xong (được đếm, không hiện).</p>
+      </section>
+
       <section class="panel" data-p="todo">
         <label><span>Danh sách việc, mỗi dòng một việc</span>
           <textarea id="todoText" placeholder="Gửi báo cáo tuần&#10;! Gọi cho mẹ&#10;x Đi chợ"></textarea></label>
@@ -169,16 +192,18 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
-let tab='todo',photo=null;
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashTitle','dashItems','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
 function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}catch(_){}
   for(const k of FIELDS)if(k in o){const el=$(k);if(el.type==='checkbox')el.checked=!!o[k];else el.value=o[k];}
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
+  const def={m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
+  for(const k in def)if(!(k in o))$(k).value=def[k];
   if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
   const t=new Date();$('calDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-  setTab(o.tab||'todo');}
+  setTab(o.tab||'dash');}
 
 /* ---------- Vẽ nhãn ---------- */
 const INK='#000',RED='#ff0000',WHITE='#fff';
@@ -200,6 +225,61 @@ function ellipsize(ctx,text,maxW){if(ctx.measureText(text).width<=maxW)return te
 function hline(ctx,x1,x2,y,color=INK){ctx.fillStyle=color;ctx.fillRect(x1,y,x2-x1,1);}
 function accent(){return $('optRed').checked?RED:INK;}
 function dateParts(d){return {wd:WD[d.getDay()],dd:d.getDate(),mm:d.getMonth()+1,yy:d.getFullYear()};}
+
+function drawIcon(ctx,type,cx,cy,name){
+  const c=accent();ctx.fillStyle=c;
+  if(type==='heart'){ctx.beginPath();ctx.moveTo(cx,cy+6);ctx.bezierCurveTo(cx-9,cy,cx-6,cy-7,cx,cy-3);ctx.bezierCurveTo(cx+6,cy-7,cx+9,cy,cx,cy+6);ctx.fill();return;}
+  if(type==='flower'){for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*3.6,cy+Math.sin(a)*3.6,3,0,7);ctx.fill();}ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(cx,cy,1.6,0,7);ctx.fill();return;}
+  ctx.beginPath();ctx.arc(cx,cy,6.5,0,7);ctx.fill();ctx.fillStyle=WHITE;
+  if(type==='mono'){setFont(ctx,10,800);ctx.textAlign='center';ctx.fillText(([...(name||'?').trim()][0]||'?').toUpperCase(),cx,cy+3.5);ctx.textAlign='left';return;}
+  const X=Math.round(cx),Y=Math.round(cy); // vẽ từng điểm ảnh để sao sắc nét trên e-ink
+  for(let i=-4;i<=4;i++){ctx.fillRect(X+i,Y,1,1);ctx.fillRect(X,Y+i,1,1);if(Math.abs(i)<=3){ctx.fillRect(X+i,Y+i,1,1);ctx.fillRect(X+i,Y-i,1,1);}}
+}
+function meter(ctx,x,x2,label,pct,y,showLeft){
+  pct=Math.max(0,Math.min(100,Math.round(Number(String(pct).replace(/[^\d.]/g,''))||0)));
+  ctx.fillStyle=INK;setFont(ctx,11,500);ctx.fillText(ellipsize(ctx,label||'',x2-x-40),x,y);
+  setFont(ctx,16,700);ctx.textAlign='right';ctx.fillText(pct+'%',x2,y+1);ctx.textAlign='left';
+  const by=y+4,bw=x2-x;ctx.fillRect(x,by,bw,1);ctx.fillRect(x,by+6,bw,1);ctx.fillRect(x,by,1,7);ctx.fillRect(x2-1,by,1,7);
+  ctx.fillRect(x+1,by+1,Math.round((bw-2)*pct/100),5);
+  if(showLeft){setFont(ctx,10,500);ctx.fillText(`còn ${100-pct}%`,x,by+17);}
+}
+function drawDash(ctx,w,h){
+  const d=new Date(),wd=['CN','T2','T3','T4','T5','T6','T7'][d.getDay()],m=4,showLeft=$('dashLeft').checked;
+  ctx.fillStyle=INK;setFont(ctx,15,700);ctx.fillText(`${wd} ${d.getDate()}/${d.getMonth()+1}`,m,15);
+  const dw=ctx.measureText(`${wd} ${d.getDate()}/${d.getMonth()+1}`).width;
+  const st=$('dashStatus').value.trim()||`Cập nhật ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  setFont(ctx,10,500);ctx.fillStyle=accent();ctx.textAlign='right';ctx.fillText(ellipsize(ctx,st,w-m*2-dw-10),w-m,14);ctx.textAlign='left';
+  ctx.fillStyle=INK;ctx.fillRect(2,18,w-4,2);
+  const col=Math.round(w*0.45);ctx.fillRect(col,24,1,h-28);
+  // Cột trái: tên + 2 thanh
+  const name=$('dashName').value.trim(),icon=$('dashIcon').value;let x=m;
+  if(icon!=='none'){drawIcon(ctx,icon,x+6,31,name);x+=17;}
+  setFont(ctx,13,700);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,name||'Tên của bạn',col-x-4),x,36);
+  const gap=showLeft?37:30,y1=showLeft?52:58;
+  meter(ctx,m,col-6,$('m1Label').value,$('m1Pct').value,y1,showLeft);
+  meter(ctx,m,col-6,$('m2Label').value,$('m2Pct').value,y1+gap,showLeft);
+  // Cột phải: lịch hôm nay
+  const rx=col+6,rw=w-rx-3;let done=0;
+  const items=$('dashItems').value.split('\n').map(s=>s.trim()).filter(Boolean).filter(s=>{if(/^[xX✓]\s+/.test(s)){done++;return false;}return true;}).map(s=>{
+    let time='',t=s;const bar=s.indexOf('|');
+    if(bar>=0){time=s.slice(0,bar).trim();t=s.slice(bar+1).trim();}
+    else{const mm=s.match(/^(\d{1,2}[:h.]\d{2})\s+(.+)$/);if(mm){time=mm[1];t=mm[2];}}
+    const imp=/^!\s*/.test(t);return {time,text:t.replace(/^!\s*/,''),imp};});
+  setFont(ctx,12,800);ctx.fillStyle=accent();ctx.fillText(($('dashTitle').value.trim()||'Hôm nay').toUpperCase(),rx,35);
+  if(done){setFont(ctx,10,500);ctx.fillStyle=INK;ctx.textAlign='right';ctx.fillText(`đã xong ${done}`,w-m,34);ctx.textAlign='left';}
+  const top=40,bottom=h-3;
+  if(!items.length){setFont(ctx,11,500,SERIF);ctx.fillStyle=INK;ctx.fillText('Một ngày thảnh thơi.',rx,top+16);return;}
+  let s=12,plan;
+  for(;s>=10;s--){const lh=s+3;plan=items.map(it=>{setFont(ctx,s,700);const tw=it.time?ctx.measureText(it.time).width+5:0,mw=it.imp?8:0;setFont(ctx,s,500);return {...it,tw,mw,lines:wrap(ctx,it.text,rw-tw-mw)};});
+    if(plan.reduce((n,p)=>n+p.lines.length,0)*lh<=bottom-top)break;if(s===10)break;}
+  const lh=s+3,maxRows=Math.floor((bottom-top)/lh);let row=0;
+  for(const p of plan){if(row>=maxRows)break;const by=top+row*lh+s;
+    if(p.time){setFont(ctx,s,700);ctx.fillStyle=INK;ctx.fillText(p.time,rx,by);}
+    if(p.imp){ctx.fillStyle=accent();const cx=rx+p.tw+3,cy=by-s*0.35;ctx.beginPath();ctx.moveTo(cx,cy-4);ctx.lineTo(cx+3,cy);ctx.lineTo(cx,cy+4);ctx.lineTo(cx-3,cy);ctx.fill();}
+    setFont(ctx,s,500);ctx.fillStyle=INK;
+    for(let i=0;i<p.lines.length&&row<maxRows;i++,row++){let t=p.lines[i];const tx=rx+p.tw+p.mw,isLast=row===maxRows-1&&(i<p.lines.length-1||p!==plan[plan.length-1]);
+      if(isLast)t=ellipsize(ctx,t+' …',rw-p.tw-p.mw);ctx.fillText(ellipsize(ctx,t,rw-p.tw-p.mw),tx,top+row*lh+s);}}
+}
 
 function drawTodo(ctx,w,h){
   const m=9,now=new Date(),p=dateParts(now);
@@ -283,7 +363,7 @@ function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
 function render(){
   const size=$('optSize').value,g=SIZES[size],cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}`;
