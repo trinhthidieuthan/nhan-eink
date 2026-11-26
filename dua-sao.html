@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đua sao nhỏ · Diệu Thân</title>
+<link rel="manifest" href="dua-sao.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="dua-sao-192.png">
+<link rel="apple-touch-icon" href="dua-sao-192.png">
 <style>
   /* Thiết kế cho màn e-ink: nền trắng, viền đen, không bóng đổ, không hiệu ứng */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -97,6 +101,35 @@
   .tabs button.on{background:#000;color:#fff}
   @media (max-width:520px){.tabs button{font-size:11px}.top h1{font-size:15px}.top .sync{display:none}.lane{grid-template-columns:64px 1fr 30px}}
 
+  /* Màn hình nghỉ: bảng treo tường toàn màn, chữ lớn */
+  .restbtn{min-height:38px;padding:2px 10px;font-size:14px;white-space:nowrap}
+  #rest{position:fixed;inset:0;background:#fff;z-index:50;display:flex;flex-direction:column;padding:14px 16px 10px;overflow:hidden}
+  #rest .rh{display:flex;align-items:flex-end;gap:14px;border-bottom:3px solid #000;padding-bottom:8px}
+  #rest .clock{font-size:64px;font-weight:800;line-height:.95;letter-spacing:-1px}
+  #rest .day{flex:1;min-width:0}
+  #rest .day b{display:block;font-size:24px;line-height:1.1}
+  #rest .day span{font-size:16px;color:#333}
+  #rest .x{position:absolute;top:8px;right:8px;min-height:34px;padding:0 10px;font-size:13px;border-color:#999;color:#555}
+  #rest .race{border:0;padding:8px 0 2px}
+  #rest .lane{grid-template-columns:96px 1fr 38px}
+  #rest .lane .who b{font-size:20px}.lane .who span{font-size:13px}
+  #rest .track{height:40px}#rest .track .runner{width:40px;height:40px;margin:-20px 0 0 -20px;font-size:22px}#rest .flag{width:38px;height:38px}
+  #rest .cheer{font-size:17px;margin:2px 0 6px}
+  #rest .rcols{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:2px solid #000}
+  #rest .rcol{padding:8px 10px;min-width:0;overflow:hidden;display:flex;flex-direction:column}
+  #rest .rcol+.rcol{border-left:2px solid #000}
+  #rest .rk{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  #rest .rk .ic{font-size:30px}#rest .rk b{font-size:24px;flex:1}
+  #rest .rk .pill{font-size:15px}
+  #rest .rt{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed #999;font-size:20px;font-weight:600;cursor:pointer}
+  #rest .rt .box{flex:0 0 30px;height:30px}
+  #rest .rt.done{color:#666;font-weight:400}#rest .rt.done span{text-decoration:line-through}#rest .rt.done .box{background:#000;color:#fff}
+  #rest .more{font-size:15px;color:#444;padding-top:6px}
+  #rest .allok{flex:1;display:grid;place-items:center;text-align:center;font-size:22px;font-weight:700}
+  #rest .rf{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:#444;border-top:1px solid #000;padding-top:6px;margin-top:4px}
+  @media (orientation:portrait){#rest .rcols{grid-template-columns:1fr;grid-template-rows:1fr 1fr}#rest .rcol+.rcol{border-left:0;border-top:2px solid #000}#rest .rt{padding:5px 0}}
+  @media (max-width:520px){#rest .clock{font-size:52px}#rest .rt{font-size:18px}}
+
   /* Cài đặt */
   .set{padding:12px}
   .set h3{margin:18px 0 8px;font-size:17px;border-bottom:2px solid #000;padding-bottom:4px}
@@ -119,11 +152,13 @@
   <div class="top">
     <h1>🏁 ĐUA SAO NHỎ</h1><span class="date" id="date"></span>
     <span class="sp"></span><span class="sync" id="sync"></span>
+    <button class="restbtn" id="restBtn" title="Màn hình nghỉ toàn màn hình">⛶ Màn hình nghỉ</button>
   </div>
   <div class="race" id="race"></div>
   <div class="main" id="main"></div>
   <nav class="tabs" id="tabs"></nav>
 </div>
+<div id="rest" hidden></div>
 
 <script>
 'use strict';
@@ -194,7 +229,8 @@ function sortT(list){return [...list].sort((a,b)=>(b.prio-a.prio)||(ORDER[a.sess
 
 function renderTop(){const d=new Date();$('date').textContent=`· ${WD[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
   $('sync').textContent=S.savedAt?`Lưu lúc ${pad(new Date(S.savedAt).getHours())}:${pad(new Date(S.savedAt).getMinutes())}`:'';}
-function renderRace(){
+function renderRace(){$('race').innerHTML=raceHTML();}
+function raceHTML(){
   const d=today(),ps=S.kids.map(k=>({k,...progress(k.id,d)}));
   let html=ps.map(p=>`<div class="lane"><div class="who"><b>${esc(p.k.name)}</b><span>${p.done}/${p.total} · ${p.pct}%</span></div>
     <div class="track"><div class="fill" style="width:${p.pct}%"></div><div class="runner" style="left:calc(17px + (100% - 34px) * ${p.pct/100})">${p.k.icon}</div></div><div class="flag" title="Đích"></div></div>`).join('');
@@ -204,7 +240,7 @@ function renderRace(){
   else if(a.pct===100||b.pct===100){const w=a.pct===100?a:b,o=w===a?b:a;msg=`${w.k.name} đã về đích! ${o.k.name} ơi, cố lên nào!`;}
   else if(a.pct===b.pct)msg=a.pct===0?'Tỉ số đang hòa! Ai sẽ xuất phát trước đây?':'Hai bạn đang ngang tài ngang sức!';
   else{const w=a.pct>b.pct?a:b,o=w===a?b:a;msg=`${w.k.name} đang dẫn trước — ${o.k.name} đuổi theo nhé!`;}
-  $('race').innerHTML=html+`<p class="cheer">“${esc(msg)}”</p>`;
+  return html+`<p class="cheer">“${esc(msg)}”</p>`;
 }
 function renderToday(){
   const d=today(),sh=sortT(sharedFor(d));
@@ -257,6 +293,9 @@ function renderSet(){
     <h3>Nhiệm vụ</h3>${taskH}<button class="solid" data-act="addTask">+ Thêm nhiệm vụ</button>
     <h3>Quà đổi sao</h3>${rwH}<button class="solid" data-act="addRw">+ Thêm quà</button>
     <h3>Quy định</h3><textarea id="rulesTa" placeholder="Mỗi dòng một quy định">${esc(S.rules.join('\n'))}</textarea>
+    <h3>Màn hình nghỉ</h3><p class="small muted">Bảng chữ lớn, toàn màn hình, giữ máy không tắt màn — hợp để dựng máy đọc sách như bảng treo tường.</p>
+    <div class="row"><label class="f">Tự vào màn hình nghỉ khi không chạm<select id="idleSel">${[[0,'Không tự vào'],[1,'Sau 1 phút'],[3,'Sau 3 phút'],[5,'Sau 5 phút'],[10,'Sau 10 phút']].map(([v,n])=>`<option value="${v}" ${(+(S.idleRest??3))===v?'selected':''}>${n}</option>`).join('')}</select></label>
+      <label class="f" style="display:flex;gap:6px;align-items:center;margin-top:16px"><input id="fullSel" type="checkbox" ${S.fullAlways?'checked':''} style="width:22px;min-height:22px"> Giữ toàn màn hình cả khi thoát</label></div>
     <h3>Mã PIN bố mẹ</h3><p class="small muted">Có PIN thì con không tự vào Cài đặt hay tự đổi quà được. Để trống nếu không cần.</p>
     <div class="row"><input id="pinSet" type="password" inputmode="numeric" maxlength="6" placeholder="${S.pin?'Đã đặt PIN — nhập PIN mới để đổi':'Chưa đặt PIN'}"><button data-act="setPin">Lưu PIN</button>${S.pin?'<button class="ghost" data-act="clearPin">Bỏ PIN</button>':''}</div>
     <h3>Sao lưu dữ liệu</h3><p class="note">Dữ liệu lưu ngay trên máy này (trình duyệt). Nên tải bản sao lưu thỉnh thoảng; khi đổi máy thì mở bản sao lưu ở máy mới.</p>
@@ -266,8 +305,42 @@ function renderSet(){
 }
 
 const $=id=>document.getElementById(id);
+/* ================= Màn hình nghỉ ================= */
+let restOn=false,restLock=null,idleTimer=0;
+function restTaskList(kidId,d){ // việc riêng + việc chung; chưa xong lên trước
+  const own=sortT(tasksFor(kidId,d)).map(t=>({t,k:kidId})),sh=sortT(sharedFor(d)).map(t=>({t,k:'shared'}));
+  return [...own,...sh].map(x=>({...x,done:isDone(d,x.t.id,x.k)})).sort((a,b)=>a.done-b.done);
+}
+function renderRest(){
+  if(!restOn)return;const n=new Date(),d=today();
+  const cols=S.kids.map(k=>{const p=progress(k.id,d),list=restTaskList(k.id,d),show=list.filter(x=>!x.done),left=0,doneN=list.filter(x=>x.done).length;
+    const body=p.total&&p.done===p.total?`<div class="allok">🏆<br>${esc(k.name)} đã xong hết việc hôm nay!</div>`:
+      show.map(x=>`<div class="rt" data-t="${x.t.id}" data-k="${x.k}"><div class="box"></div><span>${esc(x.t.title)}${x.k==='shared'?' 🏠':''}${x.t.prio?' ★':''}</span></div>`).join('')+
+      `<div class="more" data-done="${doneN}">${doneN?`đã xong ${doneN} ✓`:''}</div>`;
+    return `<div class="rcol"><div class="rk"><span class="ic">${k.icon}</span><b>${esc(k.name)}</b><span class="pill inv">${p.done}/${p.total}</span><span class="pill">★ ${S.stars[k.id]||0}</span></div>${body}</div>`;}).join('');
+  $('rest').innerHTML=`<button class="x" data-act="restOff">✕ Thoát</button>
+    <div class="rh"><div class="clock">${pad(n.getHours())}:${pad(n.getMinutes())}</div><div class="day"><b>${WD[n.getDay()]}</b><span>${pad(n.getDate())}/${pad(n.getMonth()+1)}/${n.getFullYear()} · 🏁 Đua sao nhỏ</span></div></div>
+    <div class="race">${raceHTML()}</div><div class="rcols">${cols}</div>
+    <div class="rf"><span>Chạm vào việc để đánh dấu xong</span><span>${S.savedAt?'Cập nhật '+pad(new Date(S.savedAt).getHours())+':'+pad(new Date(S.savedAt).getMinutes()):''}</span></div>`;
+  // Chỉ giữ số việc vừa khung; phần còn lại ghi “+N việc nữa”
+  for(const col of document.querySelectorAll('#rest .rcol')){const more=col.querySelector('.more');if(!more)continue;let hid=0;
+    const upd=()=>{const dn=+more.dataset.done;more.textContent=[hid?`+ ${hid} việc nữa`:'',dn?`đã xong ${dn} ✓`:''].filter(Boolean).join(' · ');};
+    upd();let rows=[...col.querySelectorAll('.rt')];while(col.scrollHeight>col.clientHeight+1&&rows.length>1){rows.pop().remove();hid++;upd();}}
+}
+window.addEventListener('resize',()=>{if(restOn)renderRest();});
+async function restEnter(full){
+  restOn=true;$('rest').hidden=false;renderRest();
+  if(full){try{await document.documentElement.requestFullscreen?.({navigationUI:'hide'});}catch(_){}}
+  try{restLock=await navigator.wakeLock?.request('screen');}catch(_){}
+}
+function restExit(){restOn=false;$('rest').hidden=true;try{restLock?.release();}catch(_){}restLock=null;
+  if(document.fullscreenElement&&!S.fullAlways)document.exitFullscreen?.().catch(()=>{});armIdle();render();}
+function armIdle(){clearTimeout(idleTimer);const m=+(S.idleRest??3)||0;if(!m||restOn)return;idleTimer=setTimeout(()=>{if(tab!=='set')restEnter(false);},m*60000);}
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{if(!restOn)armIdle();},true));
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&restOn){try{restLock=await navigator.wakeLock?.request('screen');}catch(_){}renderRest();}});
+
 function render(){
-  renderTop();renderRace();
+  renderTop();renderRace();renderRest();
   $('main').innerHTML=({today:renderToday,week:renderWeek,board:renderBoard,shop:renderShop,rules:renderRules,set:renderSet})[tab]();
   $('tabs').innerHTML=TABS.map(([v,i,n])=>`<button data-tab="${v}" class="${tab===v?'on':''}"><span class="i">${i}</span>${n}</button>`).join('');
 }
@@ -286,6 +359,7 @@ document.addEventListener('click',e=>{
   if(el.dataset.delTask){if(confirm('Xóa nhiệm vụ này?')){S.tasks=S.tasks.filter(t=>t.id!==el.dataset.delTask);save();render();}return;}
   if(el.dataset.delRw){S.rewards=S.rewards.filter(r=>r.id!==el.dataset.delRw);save();render();return;}
   const a=el.dataset.act;
+  if(a==='restOff'){restExit();return;}
   if(a==='unlock'){if($('pinIn').value===S.pin){parentOK=true;render();}else alert('Sai mã PIN.');}
   else if(a==='addTask'){S.tasks.push({id:uid(),title:'Việc mới',who:'both',session:'ca',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]});save();render();window.scrollTo(0,document.body.scrollHeight);}
   else if(a==='addRw'){S.rewards.push({id:uid(),title:'Quà mới',cost:10});save();render();}
@@ -299,6 +373,8 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const el=e.target;
   if(el.id==='impFile'){const f=el.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.kids||!o.tasks)throw 0;S=o;save();render();alert('Đã mở bản sao lưu.');}catch(_){alert('File sao lưu không hợp lệ.');}});return;}
+  if(el.id==='idleSel'){S.idleRest=+el.value;save();armIdle();return;}
+  if(el.id==='fullSel'){S.fullAlways=el.checked;save();return;}
   if(el.id==='rulesTa'){S.rules=el.value.split('\n').map(s=>s.trim()).filter(Boolean);save();return;}
   if(el.dataset.kid){const k=kid(el.dataset.kid);k[el.dataset.f]=el.value;save();renderRace();return;}
   if(el.dataset.task){const t=S.tasks.find(x=>x.id===el.dataset.task);if(!t)return;
@@ -310,8 +386,15 @@ document.addEventListener('change',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='pinIn')document.querySelector('[data-act="unlock"]')?.click();});
 
 /* Tự làm mới khi sang ngày mới (kiểm tra mỗi phút, không có hiệu ứng để hợp màn e-ink) */
-let lastDay=dkey(new Date());setInterval(()=>{const k=dkey(new Date());if(k!==lastDay){lastDay=k;render();}else renderTop();},60000);
-render();
+let lastDay=dkey(new Date());
+function minuteTick(){const k=dkey(new Date());if(k!==lastDay){lastDay=k;render();}else{renderTop();renderRest();}
+  setTimeout(minuteTick,60000-Date.now()%60000+200);} // canh đúng đầu mỗi phút để đồng hồ màn nghỉ chuẩn
+setTimeout(minuteTick,60000-Date.now()%60000+200);
+$('restBtn').onclick=()=>restEnter(true);
+/* Mở từ biểu tượng màn hình chính (toàn màn hình) hoặc có ?nghi=1 thì vào thẳng màn hình nghỉ */
+if(/[?&]nghi=1/.test(location.search))restEnter(false);
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('dua-sao-sw.js').catch(()=>{});
+render();armIdle();
 </script>
 </body>
 </html>

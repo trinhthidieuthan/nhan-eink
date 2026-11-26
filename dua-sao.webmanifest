@@ -1,0 +1,17 @@
+{
+  "name": "Đua sao nhỏ",
+  "short_name": "Đua sao",
+  "description": "Bảng nhiệm vụ và đua sao cho Vy và Viên",
+  "lang": "vi",
+  "start_url": "dua-sao.html?nghi=1",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {"src": "dua-sao-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "dua-sao-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
