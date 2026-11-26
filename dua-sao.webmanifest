@@ -1,7 +1,7 @@
 {
-  "name": "Đua sao nhỏ",
-  "short_name": "Đua sao",
-  "description": "Bảng nhiệm vụ và đua sao cho Vy và Viên",
+  "name": "Vy Viên yêu thương",
+  "short_name": "Vy Viên",
+  "description": "Bảng nhiệm vụ và đua sao cho Lam Vy và Lam Viên",
   "lang": "vi",
   "start_url": "dua-sao.html?nghi=1",
   "scope": "./",

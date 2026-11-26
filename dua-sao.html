@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Đua sao nhỏ · Diệu Thân</title>
+<title>Vy Viên yêu thương</title>
 <link rel="manifest" href="dua-sao.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="dua-sao-192.png">
@@ -25,7 +25,7 @@
   .muted{color:#555}.small{font-size:13px}
 
   /* Thanh trên */
-  .top{display:flex;align-items:center;gap:10px;border:2px solid #000;border-radius:12px 12px 0 0;padding:8px 12px}
+  .top{display:flex;align-items:center;flex-wrap:wrap;row-gap:4px;gap:10px;border:2px solid #000;border-radius:12px 12px 0 0;padding:8px 12px}
   .top h1{font-size:18px;margin:0;font-weight:800;letter-spacing:.5px;white-space:nowrap}
   .top .date{font-weight:700;white-space:nowrap}
   .top .sp{flex:1}
@@ -103,7 +103,7 @@
   @media (max-width:520px){.tabs button{font-size:11px}.top h1{font-size:15px}.top .sync{display:none}.lane{grid-template-columns:64px 1fr 30px}}
 
   /* Màn hình nghỉ: bảng treo tường toàn màn, chữ lớn */
-  .restbtn{min-height:38px;padding:2px 10px;font-size:14px;white-space:nowrap}
+  .restbtn{min-height:38px;padding:2px 10px;font-size:14px;white-space:nowrap;margin-left:auto}
   #rest{position:fixed;inset:0;background:#fff;z-index:50;display:flex;flex-direction:column;padding:14px 16px 10px;overflow:hidden}
   #rest .rh{display:flex;align-items:flex-end;gap:14px;border-bottom:3px solid #000;padding-bottom:8px}
   #rest .clock{font-size:64px;font-weight:800;line-height:.95;letter-spacing:-1px}
@@ -151,7 +151,7 @@
 <body>
 <div class="app">
   <div class="top">
-    <h1>🏁 ĐUA SAO NHỎ</h1><span class="date" id="date"></span>
+    <h1>🏁 VY VIÊN YÊU THƯƠNG</h1><span class="date" id="date"></span>
     <span class="sp"></span><span class="sync" id="sync"></span>
     <button class="restbtn" id="restBtn" title="Màn hình nghỉ toàn màn hình">⛶ Màn hình nghỉ</button>
   </div>
@@ -166,7 +166,7 @@
 /* ================= Dữ liệu ================= */
 const KEY='dua-sao-v1';
 const uid=()=>Math.random().toString(36).slice(2,9);
-const SESS={sang:'Sáng',chieu:'Chiều',toi:'Tối',ca:'Cả ngày'};
+const SESS={sang:'Sáng',trua:'Trưa',chieu:'Chiều',toi:'Tối',ca:'Cả ngày'};
 const WD=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'],WS=['CN','T2','T3','T4','T5','T6','T7'];
 const ICONS=['🐶','🐭','🐹','🐝','🐻','🐰','🦊','🐼','🐱','🐶','🦄','🐥','🐴','🐬','🦁','🐢','🌟'];
 function defaults(){
@@ -175,6 +175,7 @@ function defaults(){
     tasks:[
       {id:uid(),title:'Đánh răng, rửa mặt',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
       {id:uid(),title:'Uống hết cốc sữa',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
+      {id:uid(),title:'Ngủ trưa đúng giờ',who:'both',session:'trua',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
       {id:uid(),title:'Đọc sách 15 phút',who:'both',session:'chieu',stars:2,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
       {id:uid(),title:'Xếp sách vở cho ngày mai',who:'both',session:'toi',stars:2,prio:true,deadline:'21:00',days:[0,1,2,3,4]},
       {id:uid(),title:'Tưới cây ngoài ban công',who:'shared',session:'chieu',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
@@ -227,7 +228,7 @@ const TABS=[['today','☀','Hôm nay'],['week','▦','Tuần'],['board','🏆','
 function chips(t){const c=[];if(t.prio)c.push('<span class="chip b">★ Ưu tiên</span>');if(t.deadline)c.push(`<span class="chip">Trước ${esc(t.deadline)}</span>`);
   c.push(`<span class="chip">★×${t.stars}</span>`);if(t.session!=='ca')c.push(`<span class="chip">${SESS[t.session]}</span>`);return `<div class="chips">${c.join('')}</div>`;}
 function taskRow(t,kidId,d){const dn=isDone(d,t.id,kidId);return `<div class="task${dn?' done':''}" data-t="${t.id}" data-k="${kidId}"><div class="box">${dn?'✓':''}</div><div><div class="t">${esc(t.title)}</div>${chips(t)}</div></div>`;}
-const ORDER={sang:0,chieu:1,toi:2,ca:3};
+const ORDER={sang:0,trua:1,chieu:2,toi:3,ca:4};
 function sortT(list){return [...list].sort((a,b)=>(b.prio-a.prio)||(ORDER[a.session]-ORDER[b.session])||(a.deadline||'99').localeCompare(b.deadline||'99'));}
 
 function renderTop(){const d=new Date();$('date').textContent=`· ${WD[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
@@ -247,10 +248,10 @@ function raceHTML(){
 }
 function renderToday(){
   const d=today(),sh=sortT(sharedFor(d));
-  const seg=`<div class="seg">${[['all','Tất cả'],['sang','Sáng'],['chieu','Chiều'],['toi','Tối']].map(([v,n])=>`<button data-f="${v}" class="${filter===v?'on':''}">${n}</button>`).join('')}</div>`;
+  const seg=`<div class="seg">${[['all','Tất cả'],['sang','Sáng'],['trua','Trưa'],['chieu','Chiều'],['toi','Tối']].map(([v,n])=>`<button data-f="${v}" class="${filter===v?'on':''}">${n}</button>`).join('')}</div>`;
   const pass=t=>filter==='all'||t.session===filter||t.session==='ca';
   const cols=S.kids.map(k=>{const p=progress(k.id,d),list=sortT(tasksFor(k.id,d)).filter(pass);
-    let body='';if(filter==='all'){for(const s of ['sang','chieu','toi','ca']){const g=list.filter(t=>t.session===s);if(g.length)body+=`<div class="sess">${SESS[s].toUpperCase()}</div>`+g.map(t=>taskRow(t,k.id,d)).join('');}}
+    let body='';if(filter==='all'){for(const s of ['sang','trua','chieu','toi','ca']){const g=list.filter(t=>t.session===s);if(g.length)body+=`<div class="sess">${SESS[s].toUpperCase()}</div>`+g.map(t=>taskRow(t,k.id,d)).join('');}}
     else body=list.map(t=>taskRow(t,k.id,d)).join('');
     return `<div class="col"><div class="khead"><span class="ic">${k.icon}</span><b>${esc(k.name)}</b><span class="sub">· ${esc(k.sub)}</span><span class="pill inv">${p.done}/${p.total} việc</span><span class="pill">★ ${S.stars[k.id]||0}</span></div>${body||'<div class="empty">Không có việc ở buổi này.</div>'}</div>`;}).join('');
   const shList=sh.filter(pass);
@@ -321,7 +322,7 @@ function renderRest(){
       `<div class="more" data-done="0">${all?'🏆 Xong hết việc hôm nay!':''}</div>`;
     return `<div class="rcol"><div class="rk"><span class="ic">${k.icon}</span><b>${esc(k.name)}</b><span class="pill inv">${p.done}/${p.total}</span><span class="pill">★ ${S.stars[k.id]||0}</span></div>${body}</div>`;}).join('');
   $('rest').innerHTML=`<button class="x" data-act="restOff">✕ Thoát</button>
-    <div class="rh"><div class="clock">${pad(n.getHours())}:${pad(n.getMinutes())}</div><div class="day"><b>${WD[n.getDay()]}</b><span>${pad(n.getDate())}/${pad(n.getMonth()+1)}/${n.getFullYear()} · 🏁 Đua sao nhỏ</span></div></div>
+    <div class="rh"><div class="clock">${pad(n.getHours())}:${pad(n.getMinutes())}</div><div class="day"><b>${WD[n.getDay()]}</b><span>${pad(n.getDate())}/${pad(n.getMonth()+1)}/${n.getFullYear()} · 🏁 Vy Viên yêu thương</span></div></div>
     <div class="race">${raceHTML()}</div><div class="rcols">${cols}</div>
     <div class="rf"><span>Chạm vào việc để đánh dấu xong</span><span>${S.savedAt?'Cập nhật '+pad(new Date(S.savedAt).getHours())+':'+pad(new Date(S.savedAt).getMinutes()):''}</span></div>`;
   // Chữ to nhất mà cả hai cột vẫn vừa khung
