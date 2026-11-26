@@ -268,6 +268,18 @@
         <button id="btnCancel" hidden>Dừng</button>
         <button id="btnPng">Tải ảnh PNG</button>
       </div>
+      <div class="live" id="autoBox">
+        <b>🔄 Tự cập nhật ngày giờ</b>
+        <p>Trang tự vẽ lại và gửi lên màn theo chu kỳ, để giờ và ngày trên mọi mẫu luôn đúng. Cần để trang này mở (ví dụ trên máy Boox đặt gần màn).</p>
+        <div class="actions" style="align-items:center">
+          <select id="autoEvery" style="width:auto;flex:1">
+            <option value="5">Mỗi 5 phút</option><option value="10">Mỗi 10 phút</option><option value="15" selected>Mỗi 15 phút</option><option value="30">Mỗi 30 phút</option><option value="60">Mỗi giờ</option><option value="day">Mỗi ngày (lúc 0 giờ)</option><option value="2">Mỗi 2 phút (hao pin màn)</option>
+          </select>
+          <button id="btnAuto">Bật tự cập nhật</button>
+        </div>
+        <p class="small-note" id="autoStatus">Đang tắt.</p>
+        <p class="small-note">Mỗi lần gửi, màn nhấp nháy khoảng 30 giây để làm mới — e-ink nào cũng vậy. Khuyên dùng 15 phút trở lên; mẫu chỉ có ngày thì chọn “Mỗi ngày”.</p>
+      </div>
       <div id="liveBox" class="live" hidden>
         <b>⏱ Muốn giờ tự chạy?</b>
         <p>Nút <i>Gửi</i> ở trên gửi <u>ảnh tĩnh</u> nên giờ đứng yên. Hai nút dưới đây bảo đồng hồ dùng mặt đồng hồ/lịch <u>có sẵn trong máy</u> — tự cập nhật mỗi phút.</p>
@@ -313,7 +325,7 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','autoEvery','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab,v2:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
@@ -858,25 +870,29 @@ function onNotify(e){const v=e.target.value,data=new Uint8Array(v.buffer,v.byteO
     ble.model=data[7];ble.panel=data.length>13&&[0x21,0x29].includes(data[13])?data[13]:null;
     log(`Màn hình: model ${ble.model}${ble.panel?`, panel 0x${ble.panel.toString(16)}`:''}`);updateConn();}
 }
+/* Kết nối GATT tới thiết bị đã chọn. Dùng lại được để tự nối lại (không cần bấm chọn thiết bị lần nữa). */
+async function setupDevice(dev){
+  Object.assign(ble,{device:dev,model:null,panel:null,version:0,chunk:128});
+  if(!dev._hooked){dev._hooked=true;dev.addEventListener('gattserverdisconnected',()=>{log('Mất kết nối.');if(ble.job)ble.job.fail(new Error('Mất kết nối giữa chừng.'));updateConn();});}
+  say('Đang kết nối…');log('Kết nối '+(dev.name||'thiết bị'));
+  const server=await dev.gatt.connect();let svc;
+  try{svc=await server.getPrimaryService(SVC);}catch(_){dev.gatt.disconnect();throw new Error('thiết bị này không phải màn NRF_EPD 2.13"/2.9" nên trang chưa gửi được. Màn DLG-CLOCK hãy dùng trang gốc.');}
+  ble.ch=await svc.getCharacteristic(CHR);
+  try{const vv=await (await svc.getCharacteristic(VER)).readValue();ble.version=vv.byteLength===4?vv.getUint32(0,true):vv.getUint8(0);log('Phiên bản firmware '+ble.version);}catch(_){log('Không đọc được phiên bản firmware.');}
+  ble.ch.addEventListener('characteristicvaluechanged',onNotify);await ble.ch.startNotifications();
+  await ble.ch.writeValueWithResponse(Uint8Array.of(CMD.INIT));updateConn();
+  for(let i=0;i<30&&ble.model==null;i++)await sleep(100);
+  if(ble.model==null){ble.model=2;log('Không nhận được thông tin màn; giả định màn 2.13"/2.9". Hãy chọn đúng kích thước.');}
+  updateConn();
+}
 async function connect(){
-  if(ble.device?.gatt?.connected){ble.device.gatt.disconnect();return;}
+  if(ble.device?.gatt?.connected){autoStop();ble.device.gatt.disconnect();return;}
   if(!navigator.bluetooth){say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);return;}
   try{
     if(navigator.bluetooth.getAvailability&&!await navigator.bluetooth.getAvailability()){say('Bluetooth đang tắt hoặc Chrome chưa được phép dùng Bluetooth. Bật Bluetooth rồi thử lại (trên Mac: Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Bluetooth → bật cho Google Chrome).',true);return;}
     const opts=$('optAll').checked?{acceptAllDevices:true,optionalServices:[SVC]}:{filters:[{namePrefix:'NRF_EPD'},{services:[SVC]}],optionalServices:[SVC]};
     const dev=await navigator.bluetooth.requestDevice(opts);
-    Object.assign(ble,{device:dev,model:null,panel:null,version:0,chunk:128});
-    dev.addEventListener('gattserverdisconnected',()=>{log('Mất kết nối.');if(ble.job)ble.job.fail(new Error('Mất kết nối giữa chừng. Kết nối lại rồi gửi lại.'));updateConn();});
-    say('Đang kết nối…');log('Kết nối '+(dev.name||'thiết bị'));
-    const server=await dev.gatt.connect();let svc;
-    try{svc=await server.getPrimaryService(SVC);}catch(_){dev.gatt.disconnect();throw new Error('thiết bị này không phải màn NRF_EPD 2.13"/2.9" nên trang chưa gửi được. Màn DLG-CLOCK hãy dùng trang gốc.');}
-    ble.ch=await svc.getCharacteristic(CHR);
-    try{const vv=await (await svc.getCharacteristic(VER)).readValue();ble.version=vv.byteLength===4?vv.getUint32(0,true):vv.getUint8(0);log('Phiên bản firmware '+ble.version);}catch(_){log('Không đọc được phiên bản firmware.');}
-    ble.ch.addEventListener('characteristicvaluechanged',onNotify);await ble.ch.startNotifications();
-    await ble.ch.writeValueWithResponse(Uint8Array.of(CMD.INIT));updateConn();
-    for(let i=0;i<30&&ble.model==null;i++)await sleep(100);
-    if(ble.model==null){ble.model=2;log('Không nhận được thông tin màn; giả định màn 2.13"/2.9". Hãy chọn đúng kích thước.');}
-    updateConn();
+    await setupDevice(dev);
     say(ble.model===2?(panelSize()?'Đã kết nối. Sẵn sàng gửi nhãn.':'Đã kết nối. Hãy chọn đúng kích thước màn rồi gửi.'):'Màn hình này không phải loại 2.13"/2.9" nên trang chưa hỗ trợ.',ble.model!==2);
   }catch(e){log(e.name+': '+e.message);
     if(e.name==='NotFoundError'&&/cancel/i.test(e.message))say('Chưa chọn thiết bị. Nếu danh sách không có màn của bạn, hãy tích "Hiện mọi thiết bị Bluetooth" rồi thử lại.');
@@ -892,8 +908,9 @@ function toBytes(cv,plane){ // cùng cách mã hóa với trang gốc: quét c�
     const bit=plane==='black'?((isRed||(r>0&&g>0&&b>0))?1:0):(isRed?0:1);bits=(bits<<1)|bit;if(++n===8){out[k++]=bits;bits=0;n=0;}}
   return out;}
 async function send(){
-  if(ble.busy)return;
-  if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch||ble.model!==2)return;}
+  if(ble.busy)return false;
+  if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch||ble.model!==2)return false;}
+  let ok=false;
   const size=$('optSize').value,g=SIZES[size];
   render();const cv=document.createElement('canvas');cv.width=g.w;cv.height=128;const c=cv.getContext('2d');c.fillStyle=WHITE;c.fillRect(0,0,g.w,128);c.drawImage($('cv'),0,0);
   if(!$('optRed').checked){const im=c.getImageData(0,0,g.w,128);for(let i=0;i<im.data.length;i+=4)if(im.data[i+1]===0&&im.data[i]===255){im.data[i]=0;}c.putImageData(im,0,0);}
@@ -914,11 +931,44 @@ async function send(){
     if(size==='290')await write(mode(3));
     await write(Uint8Array.of(CMD.REFRESH));$('prog').value=97;say('Đã gửi xong. Màn đang làm mới (khoảng 30 giây)…');
     for(let i=0;i<32;i++){await sleep(1000);check();}
-    $('prog').value=100;say('Xong. Hãy xem nhãn trên màn hình.');log('Hoàn tất.');
+    $('prog').value=100;say('Xong. Hãy xem nhãn trên màn hình.');log('Hoàn tất.');ok=true;
   }catch(e){say(e.message||String(e),true);log('Lỗi: '+(e.message||e));}
   finally{ble.busy=false;ble.job=null;$('btnCancel').hidden=true;updateConn();}
+  return ok;
 }
+
+/* ---------- Tự cập nhật: vẽ lại và gửi lại theo chu kỳ để ngày giờ luôn đúng ---------- */
+const auto={on:false,timer:0,next:0,lock:null,fails:0};
+function nextAt(){const v=$('autoEvery').value,now=new Date();
+  if(v==='day'){const t=new Date(now);t.setHours(24,0,5,0);return t.getTime();}
+  const m=+v,mins=now.getHours()*60+now.getMinutes(),nm=(Math.floor(mins/m)+1)*m,t=new Date(now);t.setHours(0,nm,2,0);return t.getTime();}
+function autoStatus(){const el=$('autoStatus');if(!auto.on){el.textContent='Đang tắt.';return;}
+  const d=new Date(auto.next);el.textContent=`Đang bật · lần gửi tới lúc ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}${$('autoEvery').value==='day'?' (ngày mai)':''}. Giữ trang này mở.`;}
+function autoSchedule(){clearTimeout(auto.timer);if(!auto.on)return;auto.next=nextAt();auto.timer=setTimeout(autoTick,Math.max(1000,auto.next-Date.now()));autoStatus();}
+async function ensureConnected(){
+  if(ble.device?.gatt?.connected&&ble.ch)return true;if(!ble.device)return false;
+  for(let i=0;i<3;i++){try{await setupDevice(ble.device);return true;}catch(e){log('Nối lại chưa được: '+e.message);await sleep(4000);}}return false;}
+async function autoTick(){
+  if(!auto.on)return;
+  if(ble.busy){auto.timer=setTimeout(autoTick,15000);return;}
+  if(!await ensureConnected()){auto.fails++;say(`Tự cập nhật: chưa nối lại được màn (lần ${auto.fails}). Sẽ thử lại sau.`,true);
+    if(auto.fails>=5){autoStop();say('Tự cập nhật đã dừng vì mất kết nối nhiều lần. Bấm Bật lại khi màn ở gần.',true);return;}auto.timer=setTimeout(autoTick,60000);return;}
+  render();const ok=await send();auto.fails=ok?0:auto.fails+1;
+  if(ok){const d=new Date();log(`Tự cập nhật lúc ${d.toLocaleTimeString()}`);}
+  autoSchedule();
+}
+async function wakeLock(){try{if(auto.on&&navigator.wakeLock&&document.visibilityState==='visible')auto.lock=await navigator.wakeLock.request('screen');}catch(_){}}
+async function autoStart(){
+  if(!ble.device?.gatt?.connected){await connect();if(!ble.device?.gatt?.connected||ble.model!==2)return;}
+  auto.on=true;auto.fails=0;$('btnAuto').textContent='Tắt tự cập nhật';$('btnAuto').classList.add('primary');wakeLock();
+  await autoTick(); // gửi ngay một lần rồi hẹn lần sau
+}
+function autoStop(){auto.on=false;clearTimeout(auto.timer);try{auto.lock?.release();}catch(_){}auto.lock=null;
+  if($('btnAuto')){$('btnAuto').textContent='Bật tự cập nhật';$('btnAuto').classList.remove('primary');autoStatus();}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&auto.on){wakeLock();if(Date.now()>auto.next+5000&&!ble.busy)autoTick();}});
 $('btnConnect').onclick=connect;$('btnSend').onclick=send;
+$('btnAuto').onclick=()=>auto.on?autoStop():autoStart();
+$('autoEvery').addEventListener('change',()=>{if(auto.on)autoSchedule();});
 /* Chuyển đồng hồ sang mặt đồng hồ (mode 2) hoặc lịch (mode 1) có sẵn trong máy — giờ tự chạy.
    Cùng lệnh cài giờ 0x20 mà trang gốc dùng cho nút “Chuyển sang chế độ đồng hồ” / “Lịch tháng”. */
 async function liveMode(mode){
