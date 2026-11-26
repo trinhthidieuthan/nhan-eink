@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nhãn của tôi · e-ink</title>
+<style>
+  :root{
+    --paper:#f7f5f0; --ink:#1d1d1b; --muted:#77736b; --line:#dedad2;
+    --red:#b3261e; --card:#fffdf9;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 60px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:16px}
+  h1{font:400 30px/1.1 var(--serif);margin:0;letter-spacing:-.01em}
+  h1 em{color:var(--red);font-style:normal}
+  .sub{color:var(--muted);margin:6px 0 0;font-size:14px}
+  .conn{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .status{font-size:13px;color:var(--muted)}
+  .status::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--line);margin-right:7px;vertical-align:1px}
+  .status.on::before{background:#3d7a4a}
+  button{font:inherit;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:9px 16px;border-radius:999px;cursor:pointer;min-height:40px}
+  button:hover{background:var(--ink);color:var(--paper)}
+  button.primary{background:var(--ink);color:var(--paper)}
+  button.primary:hover{background:#000}
+  button:disabled{opacity:.4;cursor:not-allowed;background:transparent;color:var(--ink)}
+  button.primary:disabled{background:var(--ink);color:var(--paper)}
+  nav.tabs{display:flex;gap:4px;margin:22px 0 18px;overflow-x:auto}
+  nav.tabs button{border:0;border-radius:0;padding:8px 2px;margin-right:18px;min-height:0;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+  nav.tabs button:hover{background:none;color:var(--ink)}
+  nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px;align-items:start}
+  @media (max-width:820px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .panel[hidden]{display:none}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 14px}
+  label > span{display:block;margin-bottom:5px}
+  input[type=text],input[type=date],textarea,select{width:100%;font:15px/1.4 var(--sans);color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  textarea{min-height:120px;resize:vertical}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px}
+  .row{display:flex;gap:12px}
+  .row > label{flex:1}
+  .hint{font-size:12px;color:var(--muted);margin:-8px 0 14px}
+  .check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin-bottom:10px}
+  .check input{width:16px;height:16px;accent-color:var(--ink)}
+  input[type=range]{width:100%;accent-color:var(--ink)}
+  .preview{position:sticky;top:16px}
+  .device{background:#2b2a28;border-radius:18px;padding:18px 18px 26px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+  .device canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;background:#fff;border-radius:3px}
+  .device .chin{height:6px;width:40px;margin:12px auto 0;border-radius:3px;background:#444}
+  .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:10px 2px 16px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  progress{width:100%;height:4px;margin-top:14px;appearance:none;border:0;background:var(--line);border-radius:2px}
+  progress::-webkit-progress-bar{background:var(--line);border-radius:2px}
+  progress::-webkit-progress-value{background:var(--ink);border-radius:2px}
+  progress::-moz-progress-bar{background:var(--ink)}
+  .msg{font-size:13px;margin-top:10px;min-height:20px}
+  .msg.err{color:var(--red)}
+  details{margin-top:18px;font-size:12px;color:var(--muted)}
+  #log{white-space:pre-wrap;font:11px/1.5 ui-monospace,Menlo,monospace;max-height:160px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}
+  .note{font-size:12px;color:var(--muted);border-left:2px solid var(--red);padding-left:10px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Nhãn của tôi<em>.</em></h1>
+      <p class="sub">Nhãn tối giản cho màn e-ink 2.13" và 2.9", gửi qua Bluetooth.</p>
+    </div>
+    <div class="conn">
+      <span id="status" class="status">Chưa kết nối</span>
+      <button id="btnConnect">Kết nối màn hình</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-t="todo" aria-selected="true">Việc hôm nay</button>
+    <button role="tab" data-t="cal" aria-selected="false">Ngày + lịch âm</button>
+    <button role="tab" data-t="quote" aria-selected="false">Lời nhắc</button>
+    <button role="tab" data-t="photo" aria-selected="false">Ảnh</button>
+  </nav>
+
+  <div class="grid">
+    <div>
+      <section class="panel" data-p="todo">
+        <label><span>Danh sách việc, mỗi dòng một việc</span>
+          <textarea id="todoText" placeholder="Gửi báo cáo tuần&#10;! Gọi cho mẹ&#10;x Đi chợ"></textarea></label>
+        <p class="hint">Bắt đầu dòng bằng <b>!</b> để đánh dấu việc quan trọng (ô màu đỏ), bằng <b>x</b> để đánh dấu đã xong.</p>
+        <label><span>Tiêu đề</span><input id="todoTitle" type="text" maxlength="24" placeholder="Việc hôm nay"></label>
+      </section>
+
+      <section class="panel" data-p="cal" hidden>
+        <label><span>Ngày</span><input id="calDate" type="date"></label>
+        <label><span>Ghi chú ngắn (không bắt buộc)</span><input id="calNote" type="text" maxlength="40" placeholder="Ví dụ: Sinh nhật Bin"></label>
+        <p class="note">Màn hình giữ nguyên ảnh sau khi gửi, nên nhãn này không tự đổi ngày. Hãy gửi lại mỗi sáng (mất khoảng nửa phút).</p>
+      </section>
+
+      <section class="panel" data-p="quote" hidden>
+        <label><span>Câu nhắc</span><textarea id="quoteText" placeholder="Chậm lại một chút, mọi thứ vẫn kịp."></textarea></label>
+        <label><span>Người nói / ký tên (không bắt buộc)</span><input id="quoteBy" type="text" maxlength="30"></label>
+        <label><span>Kiểu chữ</span>
+          <select id="quoteFont"><option value="serif">Có chân, thanh lịch</option><option value="sans">Không chân, hiện đại</option></select></label>
+      </section>
+
+      <section class="panel" data-p="photo" hidden>
+        <label><span>Chọn ảnh</span><input id="photoFile" type="file" accept="image/*"></label>
+        <label><span>Cách đặt ảnh</span>
+          <select id="photoFit"><option value="cover">Phủ kín khung</option><option value="contain">Vừa khung, viền trắng</option></select></label>
+        <label><span>Độ sáng</span><input id="photoBright" type="range" min="-60" max="60" value="0"></label>
+        <label><span>Tương phản</span><input id="photoContrast" type="range" min="-50" max="80" value="15"></label>
+        <label><span>Chú thích dưới ảnh (không bắt buộc)</span><input id="photoCaption" type="text" maxlength="32"></label>
+      </section>
+
+      <section class="panel" style="margin-top:16px">
+        <label class="check"><input id="optRed" type="checkbox" checked> Dùng điểm nhấn đỏ</label>
+        <label class="check"><input id="optFrame" type="checkbox"> Viền mảnh quanh nhãn</label>
+        <label style="margin:8px 0 0"><span>Kích thước màn (tự chọn khi đã kết nối)</span>
+          <select id="optSize"><option value="213">2.13" · 250 × 122</option><option value="290">2.9" · 296 × 128</option></select></label>
+      </section>
+    </div>
+
+    <div class="preview">
+      <div class="device"><canvas id="cv" width="250" height="122"></canvas><div class="chin"></div></div>
+      <div class="meta"><span id="metaSize">250 × 122 · đen / trắng / đỏ</span><span>Xem trước đúng điểm ảnh</span></div>
+      <div class="actions">
+        <button id="btnSend" class="primary" disabled>Gửi lên màn hình</button>
+        <button id="btnCancel" hidden>Dừng</button>
+        <button id="btnPng">Tải ảnh PNG</button>
+      </div>
+      <progress id="prog" value="0" max="100" hidden></progress>
+      <div id="msg" class="msg"></div>
+      <details><summary>Nhật ký Bluetooth</summary><div id="log"></div></details>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- Âm lịch (thuật toán Hồ Ngọc Đức, múi giờ +7) ---------- */
+const Lunar=(()=>{
+  const F=Math.floor,PI=Math.PI;
+  function jd(dd,mm,yy){const a=F((14-mm)/12),y=yy+4800-a,m=mm+12*a-3;let j=dd+F((153*m+2)/5)+365*y+F(y/4)-F(y/100)+F(y/400)-32045;if(j<2299161)j=dd+F((153*m+2)/5)+365*y+F(y/4)-32083;return j;}
+  function newMoon(k,tz){const T=k/1236.85,T2=T*T,T3=T2*T,dr=PI/180;let J=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3;J+=0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);
+    const M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3,Mp=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3,Fa=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;
+    let C=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*dr*M);C-=0.4068*Math.sin(Mp*dr)-0.0161*Math.sin(dr*2*Mp);C-=0.0004*Math.sin(dr*3*Mp);
+    C+=0.0104*Math.sin(dr*2*Fa)-0.0051*Math.sin(dr*(M+Mp));C-=0.0074*Math.sin(dr*(M-Mp))+0.0004*Math.sin(dr*(2*Fa+M));C-=0.0004*Math.sin(dr*(2*Fa-M))-0.0006*Math.sin(dr*(2*Fa+Mp));
+    C+=0.0010*Math.sin(dr*(2*Fa-Mp))+0.0005*Math.sin(dr*(2*Mp+M));
+    const dt=T<-11?0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3:-0.000278+0.000265*T+0.000262*T2;
+    return F(J+C-dt+0.5+tz/24);}
+  function sunLong(j,tz){const T=(j-2451545.5-tz/24)/36525,T2=T*T,dr=PI/180,M=357.52910+35999.05030*T-0.0001559*T2-0.00000048*T*T2,L0=280.46645+36000.76983*T+0.0003032*T2;
+    let DL=(1.914600-0.004817*T-0.000014*T2)*Math.sin(dr*M);DL+=(0.019993-0.000101*T)*Math.sin(dr*2*M)+0.000290*Math.sin(dr*3*M);let L=(L0+DL)*dr;L-=PI*2*F(L/(PI*2));return F(L/PI*6);}
+  function month11(yy,tz){const off=jd(31,12,yy)-2415021,k=F(off/29.530588853);let nm=newMoon(k,tz);if(sunLong(nm,tz)>=9)nm=newMoon(k-1,tz);return nm;}
+  function leapOff(a11,tz){const k=F((a11-2415021.076998695)/29.530588853+0.5);let last,i=1,arc=sunLong(newMoon(k+i,tz),tz);do{last=arc;i++;arc=sunLong(newMoon(k+i,tz),tz);}while(arc!==last&&i<14);return i-1;}
+  function fromSolar(dd,mm,yy,tz=7){const dn=jd(dd,mm,yy),k=F((dn-2415021.076998695)/29.530588853);let ms=newMoon(k+1,tz);if(ms>dn)ms=newMoon(k,tz);
+    let a11=month11(yy,tz),b11=a11,ly;if(a11>=ms){ly=yy;a11=month11(yy-1,tz);}else{ly=yy+1;b11=month11(yy+1,tz);}
+    const day=dn-ms+1,diff=F((ms-a11)/29);let leap=0,mon=diff+11;
+    if(b11-a11>365){const ld=leapOff(a11,tz);if(diff>=ld){mon=diff+10;if(diff===ld)leap=1;}}
+    if(mon>12)mon-=12;if(mon>=11&&diff<4)ly-=1;return {day,month:mon,year:ly,leap};}
+  const CAN=['Giáp','Ất','Bính','Đinh','Mậu','Kỷ','Canh','Tân','Nhâm','Quý'],CHI=['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];
+  const MON=['','Giêng','Hai','Ba','Tư','Năm','Sáu','Bảy','Tám','Chín','Mười','Mười một','Chạp'];
+  return {fromSolar,canChi:y=>CAN[(y+6)%10]+' '+CHI[(y+8)%12],monthName:m=>MON[m]};
+})();
+
+/* ---------- Trạng thái và lưu cục bộ ---------- */
+const $=id=>document.getElementById(id);
+const STORE='nhan-eink-v1';
+const FIELDS=['todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+let tab='todo',photo=null;
+const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
+function save(){const o={tab};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
+function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}catch(_){}
+  for(const k of FIELDS)if(k in o){const el=$(k);if(el.type==='checkbox')el.checked=!!o[k];else el.value=o[k];}
+  if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
+  if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
+  const t=new Date();$('calDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  setTab(o.tab||'todo');}
+
+/* ---------- Vẽ nhãn ---------- */
+const INK='#000',RED='#ff0000',WHITE='#fff';
+const SERIF='Georgia, "Times New Roman", "Noto Serif", serif',SANS='-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const WD=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+function setFont(ctx,size,weight=600,fam=SANS){ctx.font=`${weight} ${size}px ${fam}`;}
+function spaced(ctx,text,x,y,track=1,align='left'){ // chữ in hoa giãn cách
+  const chars=[...text];let w=chars.reduce((s,c)=>s+ctx.measureText(c).width,0)+track*(chars.length-1);
+  let cx=align==='right'?x-w:align==='center'?x-w/2:x;ctx.textAlign='left';
+  for(const c of chars){ctx.fillText(c,cx,y);cx+=ctx.measureText(c).width+track;}return w;}
+function wrap(ctx,text,maxW){const out=[];for(const para of String(text).split('\n')){const words=para.split(/\s+/).filter(Boolean);if(!words.length){out.push('');continue;}
+  let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width<=maxW||!line)line=t;else{out.push(line);line=w;}}out.push(line);}return out;}
+function fit(ctx,text,maxW,maxH,{max=28,min=11,weight=600,fam=SANS,lh=1.22,maxLines=6}={}){
+  for(let s=max;s>=min;s--){setFont(ctx,s,weight,fam);const lines=wrap(ctx,text,maxW);const tooWide=lines.some(l=>ctx.measureText(l).width>maxW);
+    if(lines.length<=maxLines&&lines.length*s*lh<=maxH&&!tooWide)return {size:s,lines,lh:s*lh};}
+  setFont(ctx,min,weight,fam);let lines=wrap(ctx,text,maxW);const n=Math.max(1,Math.min(maxLines,Math.floor(maxH/(min*lh))));
+  if(lines.length>n){lines=lines.slice(0,n);lines[n-1]=lines[n-1].replace(/\s*\S*$/,'')+'…';}return {size:min,lines,lh:min*lh};}
+function ellipsize(ctx,text,maxW){if(ctx.measureText(text).width<=maxW)return text;let t=text;while(t.length&&ctx.measureText(t+'…').width>maxW)t=t.slice(0,-1);return t+'…';}
+function hline(ctx,x1,x2,y,color=INK){ctx.fillStyle=color;ctx.fillRect(x1,y,x2-x1,1);}
+function accent(){return $('optRed').checked?RED:INK;}
+function dateParts(d){return {wd:WD[d.getDay()],dd:d.getDate(),mm:d.getMonth()+1,yy:d.getFullYear()};}
+
+function drawTodo(ctx,w,h){
+  const m=9,now=new Date(),p=dateParts(now);
+  setFont(ctx,10,700);ctx.fillStyle=accent();ctx.fillRect(m,9,4,4);
+  ctx.fillStyle=INK;spaced(ctx,($('todoTitle').value.trim()||'Việc hôm nay').toUpperCase(),m+9,15,1.2);
+  setFont(ctx,10,500);ctx.fillStyle=INK;spaced(ctx,`${p.wd} · ${p.dd}.${p.mm}`,w-m,15,0.6,'right');
+  hline(ctx,m,w-m,21);
+  const items=$('todoText').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{
+    if(/^!\s*/.test(s))return {t:s.replace(/^!\s*/,''),imp:true};
+    if(/^[xX✓]\s+/.test(s))return {t:s.replace(/^[xX✓]\s+/,''),done:true};return {t:s};});
+  if(!items.length){setFont(ctx,12,500,SERIF);ctx.fillStyle=INK;ctx.textAlign='center';ctx.fillText('Hôm nay thật nhẹ nhàng.',w/2,h/2+14);ctx.textAlign='left';return;}
+  const top=27,bottom=h-6,avail=bottom-top;
+  let size=15,shown=items.length;
+  for(;size>=11;size--){const rowH=Math.round(size*1.5);shown=Math.min(items.length,Math.floor(avail/rowH));if(shown>=Math.min(items.length,5)||size===11)break;}
+  const rowH=Math.round(size*1.5),more=items.length-shown,list=items.slice(0,more>0?shown-1:shown);
+  list.forEach((it,i)=>{const y=top+i*rowH,box=Math.round(size*0.62),by=y+Math.round((rowH-box)/2)-1;
+    ctx.fillStyle=it.imp?accent():INK;ctx.fillRect(m,by,box,1);ctx.fillRect(m,by+box-1,box,1);ctx.fillRect(m,by,1,box);ctx.fillRect(m+box-1,by,1,box);
+    if(it.imp&&$('optRed').checked)ctx.fillRect(m+2,by+2,box-4,box-4);
+    if(it.done){ctx.fillStyle=INK;ctx.fillRect(m+2,by+2,box-4,box-4);}
+    setFont(ctx,size,it.done?400:600);ctx.fillStyle=INK;const tx=m+box+7,txt=ellipsize(ctx,it.t,w-m-tx);
+    const base=y+Math.round(rowH/2+size*0.36)-1;ctx.fillText(txt,tx,base);
+    if(it.done)hline(ctx,tx,tx+ctx.measureText(txt).width,base-Math.round(size*0.32));});
+  if(more>0){const y=top+(shown-1)*rowH;setFont(ctx,10,500);ctx.fillStyle=INK;ctx.fillText(`+ ${more+1} việc nữa`,m+Math.round(size*0.62)+7,y+Math.round(rowH/2+4));}
+}
+
+function drawCal(ctx,w,h){
+  const v=$('calDate').value.split('-').map(Number),d=v.length===3&&v[0]?new Date(v[0],v[1]-1,v[2]):new Date(),p=dateParts(d),L=Lunar.fromSolar(p.dd,p.mm,p.yy);
+  const split=Math.round(w*0.44),m=9;
+  ctx.fillStyle=INK;setFont(ctx,10,700);spaced(ctx,p.wd.toUpperCase(),split/2,17,1.2,'center');
+  const big=String(p.dd);let s=h>124?72:68;setFont(ctx,s,700,SERIF);while(ctx.measureText(big).width>split-16)setFont(ctx,--s,700,SERIF);
+  ctx.textAlign='center';ctx.fillText(big,split/2,Math.round(h*0.73));ctx.textAlign='left';
+  setFont(ctx,10,500);spaced(ctx,`THÁNG ${p.mm} · ${p.yy}`,split/2,h-9,0.8,'center');
+  ctx.fillStyle=INK;ctx.fillRect(split,12,1,h-24);
+  const x=split+12,rw=w-x-m;
+  ctx.fillStyle=accent();setFont(ctx,10,700);spaced(ctx,'ÂM LỊCH',x,20,1.4);
+  const dayTxt=L.day<=10?`Mùng ${L.day}`:L.day===15?'Rằm':`Ngày ${L.day}`;
+  ctx.fillStyle=INK;setFont(ctx,24,700,SERIF);ctx.fillText(ellipsize(ctx,dayTxt,rw),x,48);
+  setFont(ctx,11,500);ctx.fillText(ellipsize(ctx,`tháng ${Lunar.monthName(L.month)}${L.leap?' (nhuận)':''}`,rw),x,64);
+  ctx.fillText(ellipsize(ctx,`năm ${Lunar.canChi(L.year)}`,rw),x,78);
+  hline(ctx,x,w-m,88);
+  let note=$('calNote').value.trim();
+  if(!note&&L.day===1)note=L.month===1?'Chúc mừng năm mới':'Mùng một đầu tháng';
+  if(!note&&L.day===15)note='Ngày rằm';
+  if(note){const f=fit(ctx,note,rw,h-94-6,{max:12,min:10,weight:600,maxLines:2,lh:1.2});ctx.fillStyle=INK;f.lines.forEach((l,i)=>ctx.fillText(l,x,92+f.size+i*f.lh));}
+}
+
+function drawQuote(ctx,w,h){
+  const serif=$('quoteFont').value==='serif',by=$('quoteBy').value.trim(),m=14;
+  ctx.fillStyle=accent();ctx.fillRect(Math.round(w/2-10),10,20,2);
+  const areaTop=20,areaBot=by?h-22:h-10;
+  const opt={max:26,min:12,weight:serif?700:600,fam:serif?SERIF:SANS,lh:1.25,maxLines:5},txt=$('quoteText').value.trim()||' ';
+  let f=fit(ctx,txt,w-2*m,areaBot-areaTop,opt);
+  if(f.lines.length>1){opt.max=opt.min=f.size;setFont(ctx,f.size,opt.weight,opt.fam); // chia dòng cân đối, không để chữ lẻ
+    for(let mw=w-2*m-4;mw>w*0.4;mw-=4){if(wrap(ctx,txt,mw).length>f.lines.length)break;f=fit(ctx,txt,mw,areaBot-areaTop,opt);}}
+  const blockH=f.lines.length*f.lh,y0=areaTop+(areaBot-areaTop-blockH)/2;
+  ctx.fillStyle=INK;ctx.textAlign='center';f.lines.forEach((l,i)=>ctx.fillText(l,w/2,Math.round(y0+(i+1)*f.lh-f.lh*0.22)));ctx.textAlign='left';
+  if(by){setFont(ctx,10,600);ctx.fillStyle=INK;spaced(ctx,'— '+by.toUpperCase(),w/2,h-9,1,'center');}
+}
+
+function drawPhoto(ctx,w,h){
+  const cap=$('photoCaption').value.trim(),ph=cap?h-20:h;
+  if(!photo){ctx.fillStyle=INK;setFont(ctx,12,500,SERIF);ctx.textAlign='center';ctx.fillText('Chọn một tấm ảnh từ máy',w/2,ph/2+4);ctx.textAlign='left';hline(ctx,w/2-30,w/2+30,ph/2+12);}
+  else{
+    const tmp=document.createElement('canvas');tmp.width=w;tmp.height=ph;const t=tmp.getContext('2d');t.fillStyle=WHITE;t.fillRect(0,0,w,ph);
+    const cover=$('photoFit').value==='cover',sc=cover?Math.max(w/photo.width,ph/photo.height):Math.min(w/photo.width,ph/photo.height);
+    const dw=photo.width*sc,dh=photo.height*sc;t.imageSmoothingQuality='high';t.drawImage(photo,(w-dw)/2,(ph-dh)/2,dw,dh);
+    const im=t.getImageData(0,0,w,ph),a=im.data,b=+$('photoBright').value,c=+$('photoContrast').value,cf=(259*(c+255))/(255*(259-c));
+    const g=new Float32Array(w*ph);for(let i=0;i<w*ph;i++){const y=a[i*4]*.299+a[i*4+1]*.587+a[i*4+2]*.114;g[i]=cf*(y-128)+128+b;}
+    for(let y=0;y<ph;y++)for(let x=0;x<w;x++){const i=y*w+x,o=g[i],n=o<128?0:255,e=o-n;g[i]=n; // Floyd–Steinberg
+      if(x+1<w)g[i+1]+=e*7/16;if(y+1<ph){if(x>0)g[i+w-1]+=e*3/16;g[i+w]+=e*5/16;if(x+1<w)g[i+w+1]+=e/16;}}
+    for(let i=0;i<w*ph;i++){a[i*4]=a[i*4+1]=a[i*4+2]=g[i];a[i*4+3]=255;}ctx.putImageData(im,0,0);
+  }
+  if(cap){ctx.fillStyle=WHITE;ctx.fillRect(0,ph,w,h-ph);hline(ctx,0,w,ph);ctx.fillStyle=accent();ctx.fillRect(9,ph+8,4,4);
+    ctx.fillStyle=INK;setFont(ctx,11,600);ctx.fillText(ellipsize(ctx,cap,w-30),18,h-5);}
+}
+
+function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
+  for(let i=0;i<a.length;i+=4){const red=a[i]>120&&a[i]>a[i+1]*1.5&&a[i]>a[i+2]*1.5,black=!red&&(a[i]*.299+a[i+1]*.587+a[i+2]*.114)<160;
+    a[i]=red||!black?255:0;a[i+1]=a[i+2]=red||black?0:255;a[i+3]=255;}ctx.putImageData(im,0,0);}
+
+function render(){
+  const size=$('optSize').value,g=SIZES[size],cv=$('cv');cv.width=g.w;cv.height=g.h;
+  const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
+  ({todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
+  quantize(ctx,g.w,g.h);
+  $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}`;
+}
+let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;render();save();});}
+
+function setTab(t){tab=t;for(const b of document.querySelectorAll('nav.tabs button'))b.setAttribute('aria-selected',b.dataset.t===t);
+  for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;schedule();}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
+document.querySelectorAll('input,textarea,select').forEach(el=>{if(el.id!=='photoFile')el.addEventListener('input',schedule);});
+$('photoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),img=new Image();
+  img.onload=()=>{photo=img;schedule();};img.onerror=()=>say('Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG khác.',true);img.src=url;};
+$('btnPng').onclick=()=>{const a=document.createElement('a');a.download=`nhan-${tab}.png`;a.href=$('cv').toDataURL('image/png');a.click();};
+document.fonts?.ready?.then(schedule);
+
+/* ---------- Bluetooth (giao thức nRF52 của trang gốc, chỉ màn 2.13"/2.9") ---------- */
+const SVC='62750001-d828-918d-fb46-b6c11c675aec',CHR='62750002-d828-918d-fb46-b6c11c675aec',VER='62750003-d828-918d-fb46-b6c11c675aec';
+const CMD={INIT:0x01,REFRESH:0x05,SET_TIME:0x20,WRITE_IMAGE:0x30};
+const ble={device:null,ch:null,version:0,model:null,panel:null,chunk:128,initWaiter:null,busy:false,job:null};
+function log(s){const el=$('log');el.textContent+=`[${new Date().toLocaleTimeString()}] ${s}\n`;el.scrollTop=el.scrollHeight;}
+function say(s,err=false){$('msg').textContent=s;$('msg').className='msg'+(err?' err':'');}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function panelSize(){
+  if(ble.model!==2)return null;
+  if(ble.panel===0x21)return '213';if(ble.panel===0x29)return '290';
+  const v=ble.version; // bản cũ không báo loại màn, trang gốc suy ra từ phiên bản
+  if((v>=30&&v<=39)||[58,60,61,67,133,134,135,136,245,288,292].includes(v))return '290';
+  return null;}
+function updateConn(){
+  const on=!!ble.device?.gatt?.connected,st=$('status');st.classList.toggle('on',on);
+  if(!on){st.textContent='Chưa kết nối';$('btnConnect').textContent='Kết nối màn hình';}
+  else{const s=panelSize();st.textContent=ble.model==null?'Đang nhận diện màn…':ble.model!==2?'Màn này chưa được hỗ trợ':s==='290'?'Đã kết nối màn 2.9"':s==='213'?'Đã kết nối màn 2.13"':'Đã kết nối (chưa rõ cỡ màn)';
+    $('btnConnect').textContent='Ngắt kết nối';
+    const sz=panelSize();if(sz&&$('optSize').value!==sz){$('optSize').value=sz;schedule();}}
+  $('btnSend').disabled=!on||ble.model!==2||ble.busy;}
+function onNotify(e){const v=e.target.value,data=new Uint8Array(v.buffer,v.byteOffset,v.byteLength);
+  if(data.length>=3&&data[0]===0xEA&&data[1]===0x56&&data[2]===0x4E)return;
+  const text=new TextDecoder().decode(data);
+  if(/^t=\d+\s*$/.test(text)){if(ble.initWaiter){ble.initWaiter(true);ble.initWaiter=null;log('Màn 2.9" đã sẵn sàng nhận ảnh.');}return;}
+  if(text.startsWith('mtu=')){const mtu=parseInt(text.slice(4),10);if(mtu>2)ble.chunk=Math.max(18,Math.min(244,mtu-2));log(`MTU ${mtu}, gói ${ble.chunk} byte`);return;}
+  if(data.length>=8&&data.length<=64&&[1,2,3,4,5,7].includes(data[7])&&data[0]!==0xfb&&data[0]!==0x21&&data[0]!==0xa0){
+    ble.model=data[7];ble.panel=data.length>13&&[0x21,0x29].includes(data[13])?data[13]:null;
+    log(`Màn hình: model ${ble.model}${ble.panel?`, panel 0x${ble.panel.toString(16)}`:''}`);updateConn();}
+}
+async function connect(){
+  if(ble.device?.gatt?.connected){ble.device.gatt.disconnect();return;}
+  if(!navigator.bluetooth){say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);return;}
+  try{
+    const dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'NRF_EPD'},{services:[SVC]}],optionalServices:[SVC]});
+    Object.assign(ble,{device:dev,model:null,panel:null,version:0,chunk:128});
+    dev.addEventListener('gattserverdisconnected',()=>{log('Mất kết nối.');if(ble.job)ble.job.fail(new Error('Mất kết nối giữa chừng. Kết nối lại rồi gửi lại.'));updateConn();});
+    say('Đang kết nối…');log('Kết nối '+(dev.name||'thiết bị'));
+    const server=await dev.gatt.connect(),svc=await server.getPrimaryService(SVC);ble.ch=await svc.getCharacteristic(CHR);
+    try{const vv=await (await svc.getCharacteristic(VER)).readValue();ble.version=vv.byteLength===4?vv.getUint32(0,true):vv.getUint8(0);log('Phiên bản firmware '+ble.version);}catch(_){log('Không đọc được phiên bản firmware.');}
+    ble.ch.addEventListener('characteristicvaluechanged',onNotify);await ble.ch.startNotifications();
+    await ble.ch.writeValueWithResponse(Uint8Array.of(CMD.INIT));updateConn();
+    for(let i=0;i<30&&ble.model==null;i++)await sleep(100);
+    if(ble.model==null){ble.model=2;log('Không nhận được thông tin màn; giả định màn 2.13"/2.9". Hãy chọn đúng kích thước.');}
+    updateConn();
+    say(ble.model===2?(panelSize()?'Đã kết nối. Sẵn sàng gửi nhãn.':'Đã kết nối. Hãy chọn đúng kích thước màn rồi gửi.'):'Màn hình này không phải loại 2.13"/2.9" nên trang chưa hỗ trợ.',ble.model!==2);
+  }catch(e){if(e.name==='NotFoundError')say('');else{say('Chưa kết nối được: '+e.message,true);log(e.message);}updateConn();}
+}
+function toBytes(cv,plane){ // cùng cách mã hóa với trang gốc: quét cột từ phải sang trái
+  const {width:W,height:H}=cv,d=cv.getContext('2d').getImageData(0,0,W,H).data,out=new Uint8Array(W*H/8);let bits=0,n=0,k=0;
+  for(let x=W-1;x>=0;x--)for(let y=0;y<H;y++){const i=(W*y+x)*4,r=d[i],g=d[i+1],b=d[i+2],isRed=r>160&&g===0&&b===0;
+    const bit=plane==='black'?((isRed||(r>0&&g>0&&b>0))?1:0):(isRed?0:1);bits=(bits<<1)|bit;if(++n===8){out[k++]=bits;bits=0;n=0;}}
+  return out;}
+async function send(){
+  if(ble.busy||!ble.ch)return;const size=$('optSize').value,g=SIZES[size];
+  render();const cv=document.createElement('canvas');cv.width=g.w;cv.height=128;const c=cv.getContext('2d');c.fillStyle=WHITE;c.fillRect(0,0,g.w,128);c.drawImage($('cv'),0,0);
+  if(!$('optRed').checked){const im=c.getImageData(0,0,g.w,128);for(let i=0;i<im.data.length;i+=4)if(im.data[i+1]===0&&im.data[i]===255){im.data[i]=0;}c.putImageData(im,0,0);}
+  ble.busy=true;updateConn();$('btnCancel').hidden=false;$('prog').hidden=false;$('prog').value=0;
+  let failed=null;const job=ble.job={fail:e=>{failed=failed||e;if(ble.initWaiter){ble.initWaiter(false);ble.initWaiter=null;}}};
+  const check=()=>{if(failed)throw failed;};
+  const write=async p=>{check();await ble.ch.writeValueWithResponse(p);check();};
+  const mode=m=>{const ts=Math.floor(Date.now()/1000),tz=Math.round(-new Date().getTimezoneOffset()/60);return Uint8Array.of(CMD.SET_TIME,ts>>>24&255,ts>>>16&255,ts>>>8&255,ts&255,tz&255,m);};
+  const plane=async(bytes,black,a,b)=>{const ch=Math.max(1,Math.min(244,ble.chunk||18));
+    for(let o=0;o<bytes.length;o+=ch){await write(Uint8Array.from([CMD.WRITE_IMAGE,(o===0?0:0xf0)|(black?0x0f:0),...bytes.slice(o,o+ch)]));$('prog').value=a+Math.min(o+ch,bytes.length)/bytes.length*(b-a);await sleep(8);}};
+  try{
+    say('Đang chuẩn bị màn hình…');log(`Gửi nhãn ${g.w}×${g.h}`);
+    await write(mode(0));await sleep(150);
+    if(size==='290'){const ready=new Promise(r=>{ble.initWaiter=r;setTimeout(()=>r(false),45000);});await write(Uint8Array.of(CMD.INIT));if(!await ready){check();throw new Error('Màn chưa sẵn sàng. Kết nối lại rồi gửi lại.');}}
+    else{await write(Uint8Array.of(CMD.INIT));await sleep(100);}
+    say('Đang gửi nhãn. Giữ điện thoại/máy tính gần màn hình…');
+    await plane(toBytes(cv,'black'),true,5,50);await plane(toBytes(cv,'red'),false,50,95);
+    if(size==='290')await write(mode(3));
+    await write(Uint8Array.of(CMD.REFRESH));$('prog').value=97;say('Đã gửi xong. Màn đang làm mới (khoảng 30 giây)…');
+    for(let i=0;i<32;i++){await sleep(1000);check();}
+    $('prog').value=100;say('Xong. Hãy xem nhãn trên màn hình.');log('Hoàn tất.');
+  }catch(e){say(e.message||String(e),true);log('Lỗi: '+(e.message||e));}
+  finally{ble.busy=false;ble.job=null;$('btnCancel').hidden=true;updateConn();}
+}
+$('btnConnect').onclick=connect;$('btnSend').onclick=send;
+$('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
+
+load();render();
+</script>
+</body>
+</html>
