@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đua sao nhỏ · Diệu Thân</title>
+<style>
+  /* Thiết kế cho màn e-ink: nền trắng, viền đen, không bóng đổ, không hiệu ứng */
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html,body{margin:0;background:#fff;color:#000}
+  body{font:16px/1.4 -apple-system,"Segoe UI",Roboto,"Noto Sans",Helvetica,Arial,sans-serif}
+  .app{max-width:1100px;margin:0 auto;padding:10px 12px 12px}
+  button{font:inherit;color:#000;background:#fff;border:2px solid #000;border-radius:10px;padding:8px 12px;min-height:44px;cursor:pointer}
+  button:active{background:#000;color:#fff}
+  button.solid{background:#000;color:#fff}
+  button.ghost{border-color:#999}
+  button:disabled{border-color:#bbb;color:#999;background:#fff}
+  input,select,textarea{font:inherit;color:#000;background:#fff;border:2px solid #000;border-radius:8px;padding:8px 10px;min-height:44px;width:100%}
+  textarea{min-height:110px}
+  .muted{color:#555}.small{font-size:13px}
+
+  /* Thanh trên */
+  .top{display:flex;align-items:center;gap:10px;border:2px solid #000;border-radius:12px 12px 0 0;padding:8px 12px}
+  .top h1{font-size:18px;margin:0;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+  .top .date{font-weight:700;white-space:nowrap}
+  .top .sp{flex:1}
+  .top .sync{font-size:12px;color:#555;white-space:nowrap}
+  .top button{min-height:40px;padding:4px 10px}
+
+  /* Đường đua */
+  .race{border:2px solid #000;border-top:0;padding:8px 12px 6px}
+  .lane{display:grid;grid-template-columns:78px 1fr 34px;align-items:center;gap:8px;margin:6px 0}
+  .lane .who b{display:block;font-size:15px}.lane .who span{font-size:12px;color:#444}
+  .track{position:relative;height:34px;border:2px solid #000;border-radius:18px;background:repeating-linear-gradient(90deg,transparent 0 12px,#bbb 12px 13px)}
+  .track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:16px;background:repeating-linear-gradient(45deg,#000 0 3px,#fff 3px 7px);opacity:.35}
+  .track .runner{position:absolute;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid #000;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:18px}
+  .flag{width:34px;height:34px;border:2px solid #000;border-radius:6px;background:conic-gradient(#000 0 25%,#fff 0 50%,#000 0 75%,#fff 0) 0 0/12px 12px}
+  .cheer{text-align:center;font-style:italic;font-size:14px;margin:4px 0 0}
+
+  /* Nội dung */
+  .main{border:2px solid #000;border-top:0;min-height:300px}
+  .cols{display:grid;grid-template-columns:1fr 1fr}
+  .col{padding:10px 12px;min-width:0}
+  .col+.col{border-left:2px solid #000}
+  @media (max-width:560px){.col{padding:8px}.task{gap:8px}.task .t{font-size:15px}.box{flex-basis:28px;height:28px}.khead{flex-wrap:wrap}.khead .sub{display:none}.chip{font-size:11px;padding:0 5px}.shared{grid-template-columns:1fr}}
+  @media (max-width:400px){.cols{grid-template-columns:1fr}.col+.col{border-left:0;border-top:2px solid #000}}
+  .khead{display:flex;align-items:center;gap:8px;border-bottom:1px solid #000;padding-bottom:6px;margin-bottom:6px}
+  .khead .ic{font-size:20px}.khead b{font-size:18px}.khead .sub{font-size:12px;color:#555;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{display:inline-block;border:2px solid #000;border-radius:999px;padding:0 8px;font-size:13px;font-weight:700;white-space:nowrap}
+  .pill.inv{background:#000;color:#fff}
+  .task{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-bottom:1px dashed #999;cursor:pointer;user-select:none}
+  .task:last-child{border-bottom:0}
+  .box{flex:0 0 32px;height:32px;border:2.5px solid #000;border-radius:7px;display:grid;place-items:center;font-size:20px;font-weight:900;line-height:1}
+  .task.done .box{background:#000;color:#fff}
+  .task .t{font-size:17px;font-weight:600}
+  .task.done .t{text-decoration:line-through;color:#555;font-weight:400}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .chip{border:1.5px solid #000;border-radius:999px;padding:0 7px;font-size:12px;white-space:nowrap}
+  .chip.b{font-weight:800}
+  .empty{color:#666;text-align:center;padding:24px 8px;font-style:italic}
+  .shared{border-top:2px solid #000;padding:8px 12px;display:grid;grid-template-columns:110px 1fr;gap:10px}
+  .shared .lbl b{display:block}.shared .lbl span{font-size:12px;color:#555}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid #000}
+  .seg button{min-height:36px;padding:2px 12px;font-size:14px}
+  .seg button.on{background:#000;color:#fff}
+  .sess{font-weight:800;font-size:14px;letter-spacing:.5px;margin:10px 0 2px;border-bottom:2px solid #000;display:inline-block}
+
+  /* Bảng sao */
+  .card{border:2px solid #000;border-radius:14px;padding:12px;margin:10px}
+  .hero{display:flex;gap:12px;align-items:center}
+  .avatar{width:64px;height:64px;border:2px solid #000;border-radius:50%;display:grid;place-items:center;font-size:34px;flex:0 0 64px}
+  .hero b{font-size:24px;display:block}.hero span{color:#555}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+  .stat{border:2px solid #000;border-radius:10px;text-align:center;padding:8px 4px}
+  .stat b{font-size:24px;display:block}.stat span{font-size:12px}
+  .hist{list-style:none;margin:0;padding:0;font-size:14px}
+  .hist li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #999;padding:5px 0}
+  .hist li b{white-space:nowrap}
+
+  /* Tuần */
+  table.week{width:100%;border-collapse:collapse;font-size:14px}
+  .week th,.week td{border:1px solid #000;padding:6px 4px;text-align:center}
+  .week th.today,.week td.today{border-width:3px}
+  .week td.full{background:#000;color:#fff;font-weight:800}
+
+  /* Đổi quà */
+  .rw{display:flex;gap:10px;align-items:center;border-bottom:1px dashed #999;padding:10px 0;flex-wrap:wrap}
+  .rw .n{flex:1;min-width:140px;font-size:17px;font-weight:600}
+  .rw .c{font-weight:800;white-space:nowrap}
+
+  /* Thanh tab dưới */
+  .tabs{display:grid;grid-template-columns:repeat(6,1fr);border:2px solid #000;border-radius:12px;overflow:hidden;position:sticky;bottom:6px;background:#fff;z-index:5;margin-top:-2px}
+  .tabs button{border:0;border-radius:0;border-left:1px solid #000;min-height:52px;font-size:14px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.15}
+  .tabs button:first-child{border-left:0}
+  .tabs button .i{font-size:17px}
+  .tabs button.on{background:#000;color:#fff}
+  @media (max-width:520px){.tabs button{font-size:11px}.top h1{font-size:15px}.top .sync{display:none}.lane{grid-template-columns:64px 1fr 30px}}
+
+  /* Cài đặt */
+  .set{padding:12px}
+  .set h3{margin:18px 0 8px;font-size:17px;border-bottom:2px solid #000;padding-bottom:4px}
+  .set h3:first-child{margin-top:4px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .row > *{flex:1;min-width:120px}
+  .item{border:1.5px solid #000;border-radius:10px;padding:10px;margin:8px 0}
+  .item .row{margin-top:6px}
+  label.f{display:block;font-size:13px;color:#333}
+  label.f > input,label.f > select{margin-top:2px}
+  .daypick{display:flex;gap:4px;flex-wrap:wrap}
+  .daypick label{border:1.5px solid #000;border-radius:8px;padding:4px 8px;font-size:13px;display:flex;gap:4px;align-items:center}
+  .daypick input{width:auto;min-height:0}
+  .bar-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .note{font-size:13px;border-left:3px solid #000;padding-left:8px;color:#333}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>🏁 ĐUA SAO NHỎ</h1><span class="date" id="date"></span>
+    <span class="sp"></span><span class="sync" id="sync"></span>
+  </div>
+  <div class="race" id="race"></div>
+  <div class="main" id="main"></div>
+  <nav class="tabs" id="tabs"></nav>
+</div>
+
+<script>
+'use strict';
+/* ================= Dữ liệu ================= */
+const KEY='dua-sao-v1';
+const uid=()=>Math.random().toString(36).slice(2,9);
+const SESS={sang:'Sáng',chieu:'Chiều',toi:'Tối',ca:'Cả ngày'};
+const WD=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'],WS=['CN','T2','T3','T4','T5','T6','T7'];
+const ICONS=['🐝','🐻','🐰','🦊','🐼','🐱','🐶','🦄','🐥','🐴','🐬','🦁','🐢','🌟'];
+function defaults(){
+  return {
+    kids:[{id:'k1',name:'Vy',sub:'Ong nhỏ chăm chỉ',icon:'🐝'},{id:'k2',name:'Viên',sub:'Gấu con dũng cảm',icon:'🐻'}],
+    tasks:[
+      {id:uid(),title:'Đánh răng, rửa mặt',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
+      {id:uid(),title:'Uống hết cốc sữa',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
+      {id:uid(),title:'Đọc sách 15 phút',who:'both',session:'chieu',stars:2,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
+      {id:uid(),title:'Xếp sách vở cho ngày mai',who:'both',session:'toi',stars:2,prio:true,deadline:'21:00',days:[0,1,2,3,4]},
+      {id:uid(),title:'Tưới cây ngoài ban công',who:'shared',session:'chieu',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
+    ],
+    rewards:[{id:uid(),title:'30 phút xem hoạt hình',cost:10},{id:uid(),title:'Được chọn món ăn tối',cost:15},{id:uid(),title:'Đi công viên cuối tuần',cost:30},{id:uid(),title:'Một món đồ chơi nhỏ',cost:50}],
+    rules:['Làm xong việc thì tự đánh dấu, bố mẹ sẽ kiểm tra.','Mỗi việc xong được cộng số sao ghi bên cạnh.','Hoàn thành hết việc trong ngày để giữ chuỗi ngày liên tiếp.','Muốn đổi quà thì nhờ bố mẹ xác nhận.','Anh chị em giúp nhau thì cả hai cùng vui!'],
+    pin:'',done:{},stars:{k1:0,k2:0},log:[]
+  };
+}
+let S;try{S=JSON.parse(localStorage.getItem(KEY))||defaults();}catch(_){S=defaults();}
+function save(){S.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}}
+
+/* ================= Tiện ích ngày ================= */
+const pad=n=>String(n).padStart(2,'0');
+const dkey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+function weekStart(d){const x=new Date(d);const k=(x.getDay()+6)%7;x.setDate(x.getDate()-k);x.setHours(0,0,0,0);return x;}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const kid=id=>S.kids.find(k=>k.id===id);
+
+/* Việc của một bé trong một ngày: việc riêng (who=kidId), việc cả hai (both) */
+function tasksFor(kidId,d){const w=d.getDay();return S.tasks.filter(t=>(t.who===kidId||t.who==='both')&&t.days.includes(w));}
+function sharedFor(d){const w=d.getDay();return S.tasks.filter(t=>t.who==='shared'&&t.days.includes(w));}
+const isDone=(d,tid,kidId)=>!!(S.done[dkey(d)]||{})[tid+'|'+kidId];
+function progress(kidId,d){const list=tasksFor(kidId,d),sh=sharedFor(d);const total=list.length+sh.length;
+  const done=list.filter(t=>isDone(d,t.id,kidId)).length+sh.filter(t=>isDone(d,t.id,'shared')).length;return {done,total,pct:total?Math.round(done/total*100):0};}
+function streak(kidId){let d=today(),n=0;const p0=progress(kidId,d);if(!(p0.total&&p0.done===p0.total))d=addDays(d,-1);
+  for(let i=0;i<366;i++){const p=progress(kidId,d);if(!p.total){d=addDays(d,-1);continue;}if(p.done<p.total)break;n++;d=addDays(d,-1);}return n;}
+function weekStars(kidId){const ws=weekStart(today()).getTime();return S.log.filter(e=>e.kid===kidId&&e.t>=ws&&e.type!=='buy').reduce((s,e)=>s+e.delta,0);}
+function addLog(kidId,delta,reason,type){S.log.unshift({t:Date.now(),kid:kidId,delta,reason,type});if(S.log.length>400)S.log.length=400;}
+
+function toggle(tid,kidId){
+  const d=today(),k=dkey(d),t=S.tasks.find(x=>x.id===tid);if(!t)return;S.done[k]=S.done[k]||{};const key=tid+'|'+kidId,now=!S.done[k][key];
+  if(now)S.done[k][key]=true;else delete S.done[k][key];
+  const who=kidId==='shared'?S.kids.map(x=>x.id):[kidId];
+  for(const w of who){S.stars[w]=(S.stars[w]||0)+(now?t.stars:-t.stars);addLog(w,now?t.stars:-t.stars,(now?'':'Bỏ đánh dấu: ')+t.title,'task');}
+  save();render();
+}
+
+/* ================= Giao diện ================= */
+let tab='today',filter='all',parentOK=false;
+const TABS=[['today','☀','Hôm nay'],['week','▦','Tuần'],['board','🏆','Bảng sao'],['shop','🎁','Đổi quà'],['rules','📜','Quy định'],['set','⚙','Cài đặt']];
+function chips(t){const c=[];if(t.prio)c.push('<span class="chip b">★ Ưu tiên</span>');if(t.deadline)c.push(`<span class="chip">Trước ${esc(t.deadline)}</span>`);
+  c.push(`<span class="chip">★×${t.stars}</span>`);if(t.session!=='ca')c.push(`<span class="chip">${SESS[t.session]}</span>`);return `<div class="chips">${c.join('')}</div>`;}
+function taskRow(t,kidId,d){const dn=isDone(d,t.id,kidId);return `<div class="task${dn?' done':''}" data-t="${t.id}" data-k="${kidId}"><div class="box">${dn?'✓':''}</div><div><div class="t">${esc(t.title)}</div>${chips(t)}</div></div>`;}
+const ORDER={sang:0,chieu:1,toi:2,ca:3};
+function sortT(list){return [...list].sort((a,b)=>(b.prio-a.prio)||(ORDER[a.session]-ORDER[b.session])||(a.deadline||'99').localeCompare(b.deadline||'99'));}
+
+function renderTop(){const d=new Date();$('date').textContent=`· ${WD[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
+  $('sync').textContent=S.savedAt?`Lưu lúc ${pad(new Date(S.savedAt).getHours())}:${pad(new Date(S.savedAt).getMinutes())}`:'';}
+function renderRace(){
+  const d=today(),ps=S.kids.map(k=>({k,...progress(k.id,d)}));
+  let html=ps.map(p=>`<div class="lane"><div class="who"><b>${esc(p.k.name)}</b><span>${p.done}/${p.total} · ${p.pct}%</span></div>
+    <div class="track"><div class="fill" style="width:${p.pct}%"></div><div class="runner" style="left:calc(17px + (100% - 34px) * ${p.pct/100})">${p.k.icon}</div></div><div class="flag" title="Đích"></div></div>`).join('');
+  const [a,b]=ps;let msg;
+  if(!a.total&&!b.total)msg='Hôm nay chưa có nhiệm vụ nào.';
+  else if(a.pct===100&&b.pct===100)msg='Cả hai đã về đích! Tuyệt vời quá! 🎉';
+  else if(a.pct===100||b.pct===100){const w=a.pct===100?a:b,o=w===a?b:a;msg=`${w.k.name} đã về đích! ${o.k.name} ơi, cố lên nào!`;}
+  else if(a.pct===b.pct)msg=a.pct===0?'Tỉ số đang hòa! Ai sẽ xuất phát trước đây?':'Hai bạn đang ngang tài ngang sức!';
+  else{const w=a.pct>b.pct?a:b,o=w===a?b:a;msg=`${w.k.name} đang dẫn trước — ${o.k.name} đuổi theo nhé!`;}
+  $('race').innerHTML=html+`<p class="cheer">“${esc(msg)}”</p>`;
+}
+function renderToday(){
+  const d=today(),sh=sortT(sharedFor(d));
+  const seg=`<div class="seg">${[['all','Tất cả'],['sang','Sáng'],['chieu','Chiều'],['toi','Tối']].map(([v,n])=>`<button data-f="${v}" class="${filter===v?'on':''}">${n}</button>`).join('')}</div>`;
+  const pass=t=>filter==='all'||t.session===filter||t.session==='ca';
+  const cols=S.kids.map(k=>{const p=progress(k.id,d),list=sortT(tasksFor(k.id,d)).filter(pass);
+    let body='';if(filter==='all'){for(const s of ['sang','chieu','toi','ca']){const g=list.filter(t=>t.session===s);if(g.length)body+=`<div class="sess">${SESS[s].toUpperCase()}</div>`+g.map(t=>taskRow(t,k.id,d)).join('');}}
+    else body=list.map(t=>taskRow(t,k.id,d)).join('');
+    return `<div class="col"><div class="khead"><span class="ic">${k.icon}</span><b>${esc(k.name)}</b><span class="sub">· ${esc(k.sub)}</span><span class="pill inv">${p.done}/${p.total} việc</span><span class="pill">★ ${S.stars[k.id]||0}</span></div>${body||'<div class="empty">Không có việc ở buổi này.</div>'}</div>`;}).join('');
+  const shList=sh.filter(pass);
+  return seg+`<div class="cols">${cols}</div><div class="shared"><div class="lbl"><b>🏠 Việc chung</b><span>Làm cùng nhau, cả hai được sao</span></div><div>${shList.length?shList.map(t=>taskRow(t,'shared',d)).join(''):'<div class="muted small" style="padding:10px 0">Hôm nay không có việc chung.</div>'}</div></div>`;
+}
+function renderWeek(){
+  const ws=weekStart(today()),days=[...Array(7)].map((_,i)=>addDays(ws,i)),tk=dkey(today());
+  const head=days.map(d=>`<th class="${dkey(d)===tk?'today':''}">${WS[d.getDay()]}<br><span class="small">${d.getDate()}/${d.getMonth()+1}</span></th>`).join('');
+  const rows=S.kids.map(k=>`<tr><th>${k.icon} ${esc(k.name)}</th>${days.map(d=>{const p=progress(k.id,d),fut=d>today();
+    return `<td class="${dkey(d)===tk?'today ':''}${p.total&&p.done===p.total?'full':''}">${!p.total?'—':fut?`0/${p.total}`:p.done===p.total?`★ ${p.done}/${p.total}`:`${p.done}/${p.total}`}</td>`;}).join('')}</tr>`).join('');
+  const sum=S.kids.map(k=>`<div class="stat"><b>${weekStars(k.id)>=0?'+':''}${weekStars(k.id)}★</b><span>${esc(k.name)} · sao tuần này</span></div>`).join('');
+  return `<div class="set"><h3>Tuần này</h3><table class="week"><tr><th></th>${head}</tr>${rows}</table>
+    <p class="small muted">Ô đen ★ = hoàn thành hết việc trong ngày.</p><div class="stats" style="grid-template-columns:repeat(${S.kids.length},1fr)">${sum}</div></div>`;
+}
+function renderBoard(){
+  return `<div class="cols">${S.kids.map(k=>{const h=S.log.filter(e=>e.kid===k.id).slice(0,8),ws=weekStars(k.id);
+    return `<div class="col"><div class="card" style="margin:0"><div class="hero"><div class="avatar">${k.icon}</div><div><b>${esc(k.name)}</b><span>${esc(k.sub)}</span></div></div>
+      <div class="stats"><div class="stat"><b>${S.stars[k.id]||0}★</b><span>sao hiện có</span></div><div class="stat"><b>${ws>=0?'+':''}${ws}★</b><span>sao tuần này</span></div><div class="stat"><b>${streak(k.id)}🔥</b><span>ngày liên tiếp</span></div></div>
+      <b>Sao thay đổi gần đây</b><ul class="hist">${h.length?h.map(e=>{const d=new Date(e.t);return `<li><span>${esc(e.reason)} <span class="small muted">${pad(d.getDate())}/${pad(d.getMonth()+1)}</span></span><b>${e.delta>0?'+':''}${e.delta}★</b></li>`;}).join(''):'<li class="muted">Chưa có biến động nào.</li>'}</ul></div></div>`;}).join('')}</div>`;
+}
+function renderShop(){
+  return `<div class="set"><h3>Đổi sao lấy quà</h3><p class="small muted">${S.kids.map(k=>`${k.icon} ${esc(k.name)}: <b>${S.stars[k.id]||0}★</b>`).join(' · ')}</p>
+    ${S.rewards.map(r=>`<div class="rw"><span class="n">🎁 ${esc(r.title)}</span><span class="c">${r.cost}★</span>${S.kids.map(k=>`<button data-buy="${r.id}" data-k="${k.id}" ${(S.stars[k.id]||0)<r.cost?'disabled':''}>${esc(k.name)} đổi</button>`).join('')}</div>`).join('')||'<div class="empty">Chưa có quà. Thêm quà ở Cài đặt.</div>'}
+    <p class="note">Bấm “đổi” cần bố mẹ xác nhận${S.pin?' bằng mã PIN':''}.</p></div>`;
+}
+function renderRules(){return `<div class="set"><h3>📜 Quy định của nhà mình</h3><ol style="font-size:18px;line-height:1.6;padding-left:26px">${S.rules.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`;}
+
+function renderSet(){
+  if(S.pin&&!parentOK)return `<div class="set"><h3>⚙ Dành cho bố mẹ</h3><p>Nhập mã PIN để chỉnh sửa.</p><div class="row"><input id="pinIn" type="password" inputmode="numeric" maxlength="6" placeholder="Mã PIN"><button class="solid" data-act="unlock">Mở khóa</button></div></div>`;
+  const kidsH=S.kids.map((k,i)=>`<div class="item"><div class="row"><label class="f">Tên bé ${i+1}<input data-kid="${k.id}" data-f="name" value="${esc(k.name)}"></label><label class="f">Biểu tượng<select data-kid="${k.id}" data-f="icon">${ICONS.map(c=>`<option ${c===k.icon?'selected':''}>${c}</option>`).join('')}</select></label></div>
+    <label class="f" style="margin-top:6px">Biệt danh / lời giới thiệu<input data-kid="${k.id}" data-f="sub" value="${esc(k.sub)}"></label>
+    <div class="bar-act"><span class="small" style="align-self:center">Sao: <b>${S.stars[k.id]||0}★</b></span><button data-adj="-1" data-k="${k.id}">−1★</button><button data-adj="1" data-k="${k.id}">+1★</button><button data-adj="-5" data-k="${k.id}">−5★ (phạt)</button></div></div>`).join('');
+  const whoOpt=t=>[...S.kids.map(k=>[k.id,'Chỉ '+k.name]),['both','Mỗi bé một lượt'],['shared','Việc chung']].map(([v,n])=>`<option value="${v}" ${t.who===v?'selected':''}>${esc(n)}</option>`).join('');
+  const taskH=S.tasks.map(t=>`<div class="item"><label class="f">Tên việc<input data-task="${t.id}" data-f="title" value="${esc(t.title)}"></label>
+    <div class="row"><label class="f">Ai làm<select data-task="${t.id}" data-f="who">${whoOpt(t)}</select></label><label class="f">Buổi<select data-task="${t.id}" data-f="session">${Object.entries(SESS).map(([v,n])=>`<option value="${v}" ${t.session===v?'selected':''}>${n}</option>`).join('')}</select></label></div>
+    <div class="row"><label class="f">Số sao<input data-task="${t.id}" data-f="stars" type="number" min="0" max="20" value="${t.stars}"></label><label class="f">Hạn giờ<input data-task="${t.id}" data-f="deadline" type="time" value="${esc(t.deadline)}"></label>
+      <label class="f" style="display:flex;gap:6px;align-items:center;margin-top:16px"><input data-task="${t.id}" data-f="prio" type="checkbox" ${t.prio?'checked':''} style="width:22px;min-height:22px"> Ưu tiên</label></div>
+    <div class="daypick" style="margin-top:6px">${[1,2,3,4,5,6,0].map(w=>`<label><input type="checkbox" data-task="${t.id}" data-day="${w}" ${t.days.includes(w)?'checked':''}>${WS[w]}</label>`).join('')}</div>
+    <div class="bar-act"><button class="ghost" data-del-task="${t.id}">Xóa việc này</button></div></div>`).join('');
+  const rwH=S.rewards.map(r=>`<div class="item row"><input data-rw="${r.id}" data-f="title" value="${esc(r.title)}" style="flex:3"><input data-rw="${r.id}" data-f="cost" type="number" min="1" value="${r.cost}" style="flex:1;min-width:70px"><button class="ghost" data-del-rw="${r.id}" style="flex:0 0 auto">Xóa</button></div>`).join('');
+  return `<div class="set">
+    <h3>Các bé</h3>${kidsH}
+    <h3>Nhiệm vụ</h3>${taskH}<button class="solid" data-act="addTask">+ Thêm nhiệm vụ</button>
+    <h3>Quà đổi sao</h3>${rwH}<button class="solid" data-act="addRw">+ Thêm quà</button>
+    <h3>Quy định</h3><textarea id="rulesTa" placeholder="Mỗi dòng một quy định">${esc(S.rules.join('\n'))}</textarea>
+    <h3>Mã PIN bố mẹ</h3><p class="small muted">Có PIN thì con không tự vào Cài đặt hay tự đổi quà được. Để trống nếu không cần.</p>
+    <div class="row"><input id="pinSet" type="password" inputmode="numeric" maxlength="6" placeholder="${S.pin?'Đã đặt PIN — nhập PIN mới để đổi':'Chưa đặt PIN'}"><button data-act="setPin">Lưu PIN</button>${S.pin?'<button class="ghost" data-act="clearPin">Bỏ PIN</button>':''}</div>
+    <h3>Sao lưu dữ liệu</h3><p class="note">Dữ liệu lưu ngay trên máy này (trình duyệt). Nên tải bản sao lưu thỉnh thoảng; khi đổi máy thì mở bản sao lưu ở máy mới.</p>
+    <div class="bar-act"><button data-act="export">Tải bản sao lưu</button><button data-act="import">Mở bản sao lưu…</button><input id="impFile" type="file" accept="application/json" hidden>
+      <button class="ghost" data-act="resetToday">Bỏ đánh dấu hôm nay</button><button class="ghost" data-act="resetAll">Xóa hết, làm lại từ đầu</button></div>
+  </div>`;
+}
+
+const $=id=>document.getElementById(id);
+function render(){
+  renderTop();renderRace();
+  $('main').innerHTML=({today:renderToday,week:renderWeek,board:renderBoard,shop:renderShop,rules:renderRules,set:renderSet})[tab]();
+  $('tabs').innerHTML=TABS.map(([v,i,n])=>`<button data-tab="${v}" class="${tab===v?'on':''}"><span class="i">${i}</span>${n}</button>`).join('');
+}
+
+/* ================= Sự kiện ================= */
+function askParent(){if(!S.pin||parentOK)return true;const p=prompt('Mã PIN của bố mẹ:');if(p===S.pin){parentOK=true;return true;}if(p!==null)alert('Sai mã PIN.');return false;}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-tab],[data-t],[data-f],[data-buy],[data-act],[data-adj],[data-del-task],[data-del-rw]');if(!el)return;
+  if(el.dataset.tab){tab=el.dataset.tab;render();window.scrollTo(0,0);return;}
+  if(el.dataset.t){toggle(el.dataset.t,el.dataset.k);return;}
+  if(el.matches('.seg button')){filter=el.dataset.f;render();return;}
+  if(el.dataset.buy){const r=S.rewards.find(x=>x.id===el.dataset.buy),k=kid(el.dataset.k);if(!r||!k)return;
+    if(!askParent())return;if(!confirm(`${k.name} đổi “${r.title}” với ${r.cost}★?`))return;
+    S.stars[k.id]-=r.cost;addLog(k.id,-r.cost,'Đổi quà: '+r.title,'buy');save();render();alert(`Chúc mừng ${k.name}! 🎁`);return;}
+  if(el.dataset.adj){const k=el.dataset.k,n=+el.dataset.adj;S.stars[k]=(S.stars[k]||0)+n;addLog(k,n,n>0?'Bố mẹ thưởng':'Bố mẹ trừ sao','adj');save();render();return;}
+  if(el.dataset.delTask){if(confirm('Xóa nhiệm vụ này?')){S.tasks=S.tasks.filter(t=>t.id!==el.dataset.delTask);save();render();}return;}
+  if(el.dataset.delRw){S.rewards=S.rewards.filter(r=>r.id!==el.dataset.delRw);save();render();return;}
+  const a=el.dataset.act;
+  if(a==='unlock'){if($('pinIn').value===S.pin){parentOK=true;render();}else alert('Sai mã PIN.');}
+  else if(a==='addTask'){S.tasks.push({id:uid(),title:'Việc mới',who:'both',session:'ca',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]});save();render();window.scrollTo(0,document.body.scrollHeight);}
+  else if(a==='addRw'){S.rewards.push({id:uid(),title:'Quà mới',cost:10});save();render();}
+  else if(a==='setPin'){const v=$('pinSet').value.trim();if(!/^\d{4,6}$/.test(v)){alert('PIN gồm 4–6 chữ số.');return;}S.pin=v;parentOK=true;save();render();alert('Đã lưu PIN.');}
+  else if(a==='clearPin'){S.pin='';save();render();}
+  else if(a==='export'){const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}),u=URL.createObjectURL(b),l=document.createElement('a');l.href=u;l.download=`dua-sao-${dkey(new Date())}.json`;l.click();setTimeout(()=>URL.revokeObjectURL(u),2000);}
+  else if(a==='import')$('impFile').click();
+  else if(a==='resetToday'){if(confirm('Bỏ mọi đánh dấu hôm nay? (Sao đã cộng sẽ được trừ lại)')){const k=dkey(today()),m=S.done[k]||{};for(const key in m){const [tid,kd]=key.split('|'),t=S.tasks.find(x=>x.id===tid);if(!t)continue;for(const w of kd==='shared'?S.kids.map(x=>x.id):[kd]){S.stars[w]-=t.stars;addLog(w,-t.stars,'Bỏ đánh dấu: '+t.title,'task');}}delete S.done[k];save();render();}}
+  else if(a==='resetAll'){if(confirm('Xóa toàn bộ dữ liệu và làm lại từ đầu? Không hoàn tác được.')){S=defaults();save();parentOK=false;render();}}
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.id==='impFile'){const f=el.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.kids||!o.tasks)throw 0;S=o;save();render();alert('Đã mở bản sao lưu.');}catch(_){alert('File sao lưu không hợp lệ.');}});return;}
+  if(el.id==='rulesTa'){S.rules=el.value.split('\n').map(s=>s.trim()).filter(Boolean);save();return;}
+  if(el.dataset.kid){const k=kid(el.dataset.kid);k[el.dataset.f]=el.value;save();renderRace();return;}
+  if(el.dataset.task){const t=S.tasks.find(x=>x.id===el.dataset.task);if(!t)return;
+    if(el.dataset.day!=null){const w=+el.dataset.day;t.days=el.checked?[...new Set([...t.days,w])]:t.days.filter(x=>x!==w);}
+    else if(el.dataset.f==='prio')t.prio=el.checked;else if(el.dataset.f==='stars')t.stars=Math.max(0,Math.min(20,+el.value||0));else t[el.dataset.f]=el.value;
+    save();renderRace();return;}
+  if(el.dataset.rw){const r=S.rewards.find(x=>x.id===el.dataset.rw);if(!r)return;r[el.dataset.f]=el.dataset.f==='cost'?Math.max(1,+el.value||1):el.value;save();return;}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='pinIn')document.querySelector('[data-act="unlock"]')?.click();});
+
+/* Tự làm mới khi sang ngày mới (kiểm tra mỗi phút, không có hiệu ứng để hợp màn e-ink) */
+let lastDay=dkey(new Date());setInterval(()=>{const k=dkey(new Date());if(k!==lastDay){lastDay=k;render();}else renderTop();},60000);
+render();
+</script>
+</body>
+</html>
