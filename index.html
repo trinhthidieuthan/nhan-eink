@@ -176,7 +176,7 @@
         <label data-split="photo"><span>Ảnh (dùng chung với tab Ảnh)</span><input id="splitPhoto" type="file" accept="image/*"></label>
         <label data-split="tasks"><span>Tiêu đề nhiệm vụ</span><input id="splitTitle" type="text" maxlength="18" placeholder="Nhiệm vụ"></label>
         <label data-split="tasks"><span>Nhiệm vụ, mỗi dòng một việc (x ở đầu = đã xong)</span><textarea id="splitTasks" style="min-height:96px"></textarea></label>
-        <p class="note" data-split="time">Giờ trên màn là lúc bấm gửi; màn e-ink không tự chạy giờ.</p>
+        <p class="note" data-split="time">Giờ ở mẫu này là lúc bấm gửi. Muốn giờ tự chạy mỗi phút, bấm <b>Dùng bản giờ tự chạy</b> trong ô ⏱ dưới khung xem trước.</p>
       </section>
 
       <section class="panel" data-p="clk" hidden>
@@ -297,6 +297,15 @@
         </ol>
         <p class="small-note">Nếu trang gốc báo cần cài dữ liệu, vào Cập nhật phần mềm → Cài đặt đồng hồ trước. Đồng hồ đời cũ có thể chưa có Đồng hồ tranh.</p>
       </div>
+      <div id="liveBox" class="live" hidden>
+        <b>⏱ Muốn giờ tự chạy mỗi phút?</b>
+        <p>Nút <i>Gửi</i> ở trên gửi <u>ảnh tĩnh</u> nên giờ đứng yên.</p>
+        <div id="toArtWrap"><p><b>Giữ thiết kế của bạn:</b> chuyển sang bản có ô giờ do đồng hồ tự chạy (nội dung được chép sang).</p>
+          <div class="actions"><button id="btnToArt" class="primary">Dùng bản giờ tự chạy</button></div></div>
+        <p style="margin-top:12px"><b>Hoặc dùng mặt có sẵn trong máy:</b></p>
+        <div class="actions"><button id="btnLiveClock">Đồng hồ tự chạy</button><button id="btnLiveCal">Lịch tự chạy</button></div>
+        <p class="small-note">Bấm lại cùng nút để chuyển lần lượt sang mặt khác. Hai nút này thay hẳn mẫu đang hiện bằng mặt đồng hồ/lịch của máy.</p>
+      </div>
       <div class="live" id="autoBox">
         <b>🔄 Tự cập nhật ngày giờ</b>
         <p>Trang tự vẽ lại và gửi lên màn theo chu kỳ, để giờ và ngày trên mọi mẫu luôn đúng. Cần để trang này mở (ví dụ trên máy Boox đặt gần màn).</p>
@@ -308,12 +317,6 @@
         </div>
         <p class="small-note" id="autoStatus">Đang tắt.</p>
         <p class="small-note">Mỗi lần gửi, màn nhấp nháy khoảng 30 giây để làm mới — e-ink nào cũng vậy. Khuyên dùng 15 phút trở lên; mẫu chỉ có ngày thì chọn “Mỗi ngày”.</p>
-      </div>
-      <div id="liveBox" class="live" hidden>
-        <b>⏱ Muốn giờ tự chạy?</b>
-        <p>Nút <i>Gửi</i> ở trên gửi <u>ảnh tĩnh</u> nên giờ đứng yên. Hai nút dưới đây bảo đồng hồ dùng mặt đồng hồ/lịch <u>có sẵn trong máy</u> — tự cập nhật mỗi phút.</p>
-        <div class="actions"><button id="btnLiveClock">Đồng hồ tự chạy</button><button id="btnLiveCal">Lịch tự chạy</button></div>
-        <p class="small-note">Bấm lại cùng nút để chuyển lần lượt sang mặt khác. Muốn chọn đúng một mặt cụ thể, dùng mục “Chọn giao diện đồng hồ” ở trang gốc.</p>
       </div>
       <progress id="prog" value="0" max="100" hidden></progress>
       <div id="msg" class="msg"></div>
@@ -873,10 +876,23 @@ function kidFields(){const s=$('kidStyle').value;for(const el of document.queryS
   for(const el of document.querySelectorAll('[data-tpl]'))el.hidden=el.dataset.tpl!==$('tplKind').value;
   for(const el of document.querySelectorAll('[data-art]'))el.hidden=!el.dataset.art.split(' ').includes($('artKind').value);
   $('artPos').disabled=$('artBox').value!=='small';
+  if(typeof artTarget==='function')$('toArtWrap').hidden=!artTarget();
   const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.some(p=>p.includes(el.dataset.split));}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();if(typeof scheduleThumbs==='function')scheduleThumbs();});}
 
-function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;$('liveBox').hidden=t!=='clk';
+/* Mẫu nào có giờ/ngày thì gợi ý bản “giờ tự chạy” tương ứng (nhóm Giờ tự chạy) */
+function artTarget(){
+  if(tab==='split'){const m=$('splitMode').value;if(m==='time-tasks')return {kind:'tasks',title:$('splitTitle').value,tasks:$('splitTasks').value};return m.startsWith('photo')?{kind:'photo'}:null;}
+  if(tab==='kids'){const s=$('kidStyle').value;return s==='hero'?{kind:'note',title:'Nhiệm vụ đặc biệt',msg:$('kidMission').value,by:$('kid1Name').value}:{kind:'tasks',title:'Nhiệm vụ của '+($('kid1Name').value.trim()||'con'),tasks:$('kid1Tasks').value};}
+  if(tab==='dash')return {kind:'tasks',title:$('dashTitle').value.trim()||'Hôm nay',tasks:$('dashItems').value.split('\n').map(s=>s.replace(/^[^|]*\|\s*/,'').replace(/^\d{1,2}[:h.]\d{2}\s+/,'')).join('\n')};
+  if(tab==='todo')return {kind:'tasks',title:$('todoTitle').value.trim()||'Việc hôm nay',tasks:$('todoText').value.split('\n').map(s=>s.replace(/^!\s*/,'')).join('\n')};
+  if(tab==='cal')return {kind:'note',title:'Hôm nay',msg:$('calNote').value.trim()||'Chúc cả nhà một ngày vui!',by:''};
+  if(tab==='photo')return {kind:'photo'};
+  return null;
+}
+const TIME_TABS=['clk','split','kids','dash','todo','cal','photo'];
+function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;
+  $('liveBox').hidden=!TIME_TABS.includes(t);$('toArtWrap').hidden=!artTarget();
   const art=t==='art';$('artGuide').hidden=!art;$('autoBox').hidden=art;$('btnSend').hidden=art;schedule();}
 
 /* ---------- Thư viện chọn màn hình ---------- */
@@ -1061,6 +1077,10 @@ async function liveMode(mode){
   }catch(e){say('Chưa gửi được: '+e.message,true);log('Lỗi: '+e.message);}
   finally{ble.busy=false;updateConn();}
 }
+$('btnToArt').onclick=()=>{const a=artTarget();if(!a)return;
+  if(a.title)$('artTitle').value=a.title;if(a.tasks!=null)$('artTasks').value=a.tasks;if(a.msg!=null)$('artMsg').value=a.msg;if(a.by!=null)$('artBy').value=a.by;
+  if(a.kind==='photo'&&tab==='photo')$('artCaption').value=$('photoCaption').value;
+  chooseLayout(LAYOUTS.find(l=>l.t==='art'&&l.value===a.kind));window.scrollTo({top:0});};
 $('btnLiveClock').onclick=()=>liveMode(2);$('btnLiveCal').onclick=()=>liveMode(1);
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
 
