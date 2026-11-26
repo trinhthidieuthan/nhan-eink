@@ -199,7 +199,7 @@ function save(){const o={tab};for(const k of FIELDS){const el=$(k);o[k]=el.type=
 function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}catch(_){}
   for(const k of FIELDS)if(k in o){const el=$(k);if(el.type==='checkbox')el.checked=!!o[k];else el.value=o[k];}
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
-  const def={m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
+  const def={dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
   for(const k in def)if(!(k in o))$(k).value=def[k];
   if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
   const t=new Date();$('calDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
@@ -254,7 +254,8 @@ function drawDash(ctx,w,h){
   // Cột trái: tên + 2 thanh
   const name=$('dashName').value.trim(),icon=$('dashIcon').value;let x=m;
   if(icon!=='none'){drawIcon(ctx,icon,x+6,31,name);x+=17;}
-  setFont(ctx,13,700);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,name||'Tên của bạn',col-x-4),x,36);
+  const nm=name||'Tên của bạn';let ns=13;setFont(ctx,ns,700);while(ns>10&&ctx.measureText(nm).width>col-x-4)setFont(ctx,--ns,700);
+  ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,nm,col-x-4),x,36);
   const gap=showLeft?37:30,y1=showLeft?52:58;
   meter(ctx,m,col-6,$('m1Label').value,$('m1Pct').value,y1,showLeft);
   meter(ctx,m,col-6,$('m2Label').value,$('m2Pct').value,y1+gap,showLeft);
