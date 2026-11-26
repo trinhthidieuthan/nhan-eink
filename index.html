@@ -131,6 +131,7 @@
         <button id="btnCancel" hidden>Dừng</button>
         <button id="btnPng">Tải ảnh PNG</button>
       </div>
+      <label class="check" style="margin-top:12px;font-size:13px;color:var(--muted)"><input id="optAll" type="checkbox"> Hiện mọi thiết bị Bluetooth (khi không thấy màn trong danh sách)</label>
       <progress id="prog" value="0" max="100" hidden></progress>
       <div id="msg" class="msg"></div>
       <details><summary>Nhật ký Bluetooth</summary><div id="log"></div></details>
@@ -317,7 +318,8 @@ function updateConn(){
   else{const s=panelSize();st.textContent=ble.model==null?'Đang nhận diện màn…':ble.model!==2?'Màn này chưa được hỗ trợ':s==='290'?'Đã kết nối màn 2.9"':s==='213'?'Đã kết nối màn 2.13"':'Đã kết nối (chưa rõ cỡ màn)';
     $('btnConnect').textContent='Ngắt kết nối';
     const sz=panelSize();if(sz&&$('optSize').value!==sz){$('optSize').value=sz;schedule();}}
-  $('btnSend').disabled=!on||ble.model!==2||ble.busy;}
+  $('btnSend').disabled=ble.busy||(on&&ble.model!==2);
+  $('btnSend').textContent=on?'Gửi lên màn hình':'Kết nối và gửi';}
 function onNotify(e){const v=e.target.value,data=new Uint8Array(v.buffer,v.byteOffset,v.byteLength);
   if(data.length>=3&&data[0]===0xEA&&data[1]===0x56&&data[2]===0x4E)return;
   const text=new TextDecoder().decode(data);
@@ -331,11 +333,15 @@ async function connect(){
   if(ble.device?.gatt?.connected){ble.device.gatt.disconnect();return;}
   if(!navigator.bluetooth){say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);return;}
   try{
-    const dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'NRF_EPD'},{services:[SVC]}],optionalServices:[SVC]});
+    if(navigator.bluetooth.getAvailability&&!await navigator.bluetooth.getAvailability()){say('Bluetooth đang tắt hoặc Chrome chưa được phép dùng Bluetooth. Bật Bluetooth rồi thử lại (trên Mac: Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Bluetooth → bật cho Google Chrome).',true);return;}
+    const opts=$('optAll').checked?{acceptAllDevices:true,optionalServices:[SVC]}:{filters:[{namePrefix:'NRF_EPD'},{services:[SVC]}],optionalServices:[SVC]};
+    const dev=await navigator.bluetooth.requestDevice(opts);
     Object.assign(ble,{device:dev,model:null,panel:null,version:0,chunk:128});
     dev.addEventListener('gattserverdisconnected',()=>{log('Mất kết nối.');if(ble.job)ble.job.fail(new Error('Mất kết nối giữa chừng. Kết nối lại rồi gửi lại.'));updateConn();});
     say('Đang kết nối…');log('Kết nối '+(dev.name||'thiết bị'));
-    const server=await dev.gatt.connect(),svc=await server.getPrimaryService(SVC);ble.ch=await svc.getCharacteristic(CHR);
+    const server=await dev.gatt.connect();let svc;
+    try{svc=await server.getPrimaryService(SVC);}catch(_){dev.gatt.disconnect();throw new Error('thiết bị này không phải màn NRF_EPD 2.13"/2.9" nên trang chưa gửi được. Màn DLG-CLOCK hãy dùng trang gốc.');}
+    ble.ch=await svc.getCharacteristic(CHR);
     try{const vv=await (await svc.getCharacteristic(VER)).readValue();ble.version=vv.byteLength===4?vv.getUint32(0,true):vv.getUint8(0);log('Phiên bản firmware '+ble.version);}catch(_){log('Không đọc được phiên bản firmware.');}
     ble.ch.addEventListener('characteristicvaluechanged',onNotify);await ble.ch.startNotifications();
     await ble.ch.writeValueWithResponse(Uint8Array.of(CMD.INIT));updateConn();
@@ -343,7 +349,13 @@ async function connect(){
     if(ble.model==null){ble.model=2;log('Không nhận được thông tin màn; giả định màn 2.13"/2.9". Hãy chọn đúng kích thước.');}
     updateConn();
     say(ble.model===2?(panelSize()?'Đã kết nối. Sẵn sàng gửi nhãn.':'Đã kết nối. Hãy chọn đúng kích thước màn rồi gửi.'):'Màn hình này không phải loại 2.13"/2.9" nên trang chưa hỗ trợ.',ble.model!==2);
-  }catch(e){if(e.name==='NotFoundError')say('');else{say('Chưa kết nối được: '+e.message,true);log(e.message);}updateConn();}
+  }catch(e){log(e.name+': '+e.message);
+    if(e.name==='NotFoundError'&&/cancel/i.test(e.message))say('Chưa chọn thiết bị. Nếu danh sách không có màn của bạn, hãy tích "Hiện mọi thiết bị Bluetooth" rồi thử lại.');
+    else if(e.name==='NotFoundError')say('Không tìm thấy màn hình. Kiểm tra Bluetooth đã bật, màn còn pin, và trang gốc (hoặc tab khác) không còn kết nối với màn.',true);
+    else if(e.name==='SecurityError'||e.name==='NotAllowedError')say('Trình duyệt chặn Bluetooth. Hãy mở trang bằng Chrome/Edge qua địa chỉ https.',true);
+    else if(/connect|GATT/i.test(e.message))say('Không kết nối được. Ngắt kết nối ở trang gốc (hoặc tab khác) rồi thử lại; mỗi lúc màn chỉ nhận một kết nối.',true);
+    else say('Chưa kết nối được: '+e.message,true);
+    updateConn();}
 }
 function toBytes(cv,plane){ // cùng cách mã hóa với trang gốc: quét cột từ phải sang trái
   const {width:W,height:H}=cv,d=cv.getContext('2d').getImageData(0,0,W,H).data,out=new Uint8Array(W*H/8);let bits=0,n=0,k=0;
@@ -351,7 +363,9 @@ function toBytes(cv,plane){ // cùng cách mã hóa với trang gốc: quét c�
     const bit=plane==='black'?((isRed||(r>0&&g>0&&b>0))?1:0):(isRed?0:1);bits=(bits<<1)|bit;if(++n===8){out[k++]=bits;bits=0;n=0;}}
   return out;}
 async function send(){
-  if(ble.busy||!ble.ch)return;const size=$('optSize').value,g=SIZES[size];
+  if(ble.busy)return;
+  if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch||ble.model!==2)return;}
+  const size=$('optSize').value,g=SIZES[size];
   render();const cv=document.createElement('canvas');cv.width=g.w;cv.height=128;const c=cv.getContext('2d');c.fillStyle=WHITE;c.fillRect(0,0,g.w,128);c.drawImage($('cv'),0,0);
   if(!$('optRed').checked){const im=c.getImageData(0,0,g.w,128);for(let i=0;i<im.data.length;i+=4)if(im.data[i+1]===0&&im.data[i]===255){im.data[i]=0;}c.putImageData(im,0,0);}
   ble.busy=true;updateConn();$('btnCancel').hidden=false;$('prog').hidden=false;$('prog').value=0;
@@ -378,7 +392,9 @@ async function send(){
 $('btnConnect').onclick=connect;$('btnSend').onclick=send;
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
 
-load();render();
+load();render();updateConn();
+if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);
+else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
 </script>
 </body>
 </html>
