@@ -91,7 +91,7 @@
         <div class="row">
           <label><span>Tên hiển thị</span><input id="dashName" type="text" maxlength="24" placeholder="Tên của bạn"></label>
           <label style="flex:0 0 38%"><span>Biểu tượng</span>
-            <select id="dashIcon"><option value="star">✳ Sao</option><option value="heart">♥ Trái tim</option><option value="flower">✿ Bông hoa</option><option value="mono">Chữ cái đầu</option><option value="none">Không</option></select></label>
+            <select id="dashIcon"><option value="home">⌂ Ngôi nhà</option><option value="star">✳ Sao</option><option value="heart">♥ Trái tim</option><option value="flower">✿ Bông hoa</option><option value="mono">Chữ cái đầu</option><option value="none">Không</option></select></label>
         </div>
         <label><span>Dòng trạng thái góc trên (để trống: tự ghi giờ cập nhật)</span><input id="dashStatus" type="text" maxlength="32" placeholder="Ví dụ: Hẹn 14:00"></label>
         <div class="row">
@@ -103,6 +103,7 @@
           <label style="flex:0 0 30%"><span>% đã dùng</span><input id="m2Pct" type="text" inputmode="numeric" maxlength="3"></label>
         </div>
         <label class="check"><input id="dashLeft" type="checkbox" checked> Ghi “còn …%” dưới mỗi thanh</label>
+        <label class="check"><input id="dashUpper" type="checkbox" checked> Viết in hoa toàn bộ chữ</label>
         <label><span>Tiêu đề cột phải</span><input id="dashTitle" type="text" maxlength="14" placeholder="Hôm nay"></label>
         <label><span>Lịch hôm nay, mỗi dòng một việc</span>
           <textarea id="dashItems" placeholder="Cả ngày | ! Tuần lễ sách&#10;16:30 Gặp chị Lan&#10;x Gửi báo cáo"></textarea></label>
@@ -192,13 +193,14 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashTitle','dashItems','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
-function save(){const o={tab};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
+function save(){const o={tab,v2:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
 function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}catch(_){}
   for(const k of FIELDS)if(k in o){const el=$(k);if(el.type==='checkbox')el.checked=!!o[k];else el.value=o[k];}
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
+  if(!o.v2){o.dashIcon='home';o.dashUpper=true;$('dashIcon').value='home';$('dashUpper').checked=true;} // bản 2: nhà + in hoa
   const def={dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
   for(const k in def)if(!(k in o))$(k).value=def[k];
   if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
@@ -228,6 +230,10 @@ function dateParts(d){return {wd:WD[d.getDay()],dd:d.getDate(),mm:d.getMonth()+1
 
 function drawIcon(ctx,type,cx,cy,name){
   const c=accent();ctx.fillStyle=c;
+  if(type==='home'){const X=Math.round(cx),Y=Math.round(cy);
+    for(let r=0;r<7;r++)ctx.fillRect(X-r,Y-7+r,2*r+1,1);            // mái nhà
+    ctx.fillRect(X-5,Y,11,7);ctx.fillRect(X+3,Y-6,2,3);              // thân nhà + ống khói
+    ctx.fillStyle=WHITE;ctx.fillRect(X-1,Y+2,3,5);return;}           // cửa
   if(type==='heart'){ctx.beginPath();ctx.moveTo(cx,cy+6);ctx.bezierCurveTo(cx-9,cy,cx-6,cy-7,cx,cy-3);ctx.bezierCurveTo(cx+6,cy-7,cx+9,cy,cx,cy+6);ctx.fill();return;}
   if(type==='flower'){for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2;ctx.beginPath();ctx.arc(cx+Math.cos(a)*3.6,cy+Math.sin(a)*3.6,3,0,7);ctx.fill();}ctx.fillStyle=WHITE;ctx.beginPath();ctx.arc(cx,cy,1.6,0,7);ctx.fill();return;}
   ctx.beginPath();ctx.arc(cx,cy,6.5,0,7);ctx.fill();ctx.fillStyle=WHITE;
@@ -244,6 +250,12 @@ function meter(ctx,x,x2,label,pct,y,showLeft){
   if(showLeft){setFont(ctx,10,500);ctx.fillText(`còn ${100-pct}%`,x,by+17);}
 }
 function drawDash(ctx,w,h){
+  if(!$('dashUpper').checked)return drawDashInner(ctx,w,h);
+  const f=ctx.fillText.bind(ctx),m=ctx.measureText.bind(ctx),U=t=>String(t).toLocaleUpperCase('vi');
+  ctx.fillText=(t,...a)=>f(U(t),...a);ctx.measureText=t=>m(U(t));
+  try{drawDashInner(ctx,w,h);}finally{delete ctx.fillText;delete ctx.measureText;}
+}
+function drawDashInner(ctx,w,h){
   const d=new Date(),wd=['CN','T2','T3','T4','T5','T6','T7'][d.getDay()],m=4,showLeft=$('dashLeft').checked;
   ctx.fillStyle=INK;setFont(ctx,15,700);ctx.fillText(`${wd} ${d.getDate()}/${d.getMonth()+1}`,m,15);
   const dw=ctx.measureText(`${wd} ${d.getDate()}/${d.getMonth()+1}`).width;
