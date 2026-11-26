@@ -121,13 +121,13 @@
   #rest .rk{display:flex;align-items:center;gap:8px;margin-bottom:4px}
   #rest .rk .ic{font-size:30px}#rest .rk b{font-size:24px;flex:1}
   #rest .rk .pill{font-size:15px}
-  #rest .rt{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed #999;font-size:20px;font-weight:600;cursor:pointer}
-  #rest .rt .box{flex:0 0 30px;height:30px}
+  #rest .rt{display:flex;gap:10px;align-items:flex-start;padding:calc(var(--fs,20px)*.35) 0;border-bottom:1px dashed #999;font-size:var(--fs,20px);line-height:1.25;font-weight:600;cursor:pointer}
+  #rest .rt .box{flex:0 0 calc(var(--fs,20px)*1.4);height:calc(var(--fs,20px)*1.4);font-size:calc(var(--fs,20px)*.95)}
   #rest .rt.done{color:#666;font-weight:400}#rest .rt.done span{text-decoration:line-through}#rest .rt.done .box{background:#000;color:#fff}
   #rest .more{font-size:15px;color:#444;padding-top:6px}
   #rest .allok{flex:1;display:grid;place-items:center;text-align:center;font-size:22px;font-weight:700}
   #rest .rf{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:#444;border-top:1px solid #000;padding-top:6px;margin-top:4px}
-  @media (orientation:portrait){#rest .rcols{grid-template-columns:1fr;grid-template-rows:1fr 1fr}#rest .rcol+.rcol{border-left:0;border-top:2px solid #000}#rest .rt{padding:5px 0}}
+  @media (orientation:portrait){#rest .rt{gap:8px}#rest .rk b{font-size:20px}#rest .rk .ic{font-size:24px}#rest .rk{flex-wrap:wrap;gap:4px 6px}#rest .rcol{padding:8px 8px}}
   @media (max-width:520px){#rest .clock{font-size:52px}#rest .rt{font-size:18px}}
 
   /* Cài đặt */
@@ -170,7 +170,7 @@ const WD=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ 
 const ICONS=['🐶','🐭','🐹','🐝','🐻','🐰','🦊','🐼','🐱','🐶','🦄','🐥','🐴','🐬','🦁','🐢','🌟'];
 function defaults(){
   return {
-    kids:[{id:'k1',name:'Vy',sub:'Cún con chăm chỉ',icon:'🐶'},{id:'k2',name:'Viên',sub:'Chuột con lanh lợi',icon:'🐭'}],
+    kids:[{id:'k1',name:'Lam Vy',sub:'Cún con chăm chỉ',icon:'🐶'},{id:'k2',name:'Lam Viên',sub:'Chuột con lanh lợi',icon:'🐭'}],
     tasks:[
       {id:uid(),title:'Đánh răng, rửa mặt',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
       {id:uid(),title:'Uống hết cốc sữa',who:'both',session:'sang',stars:1,prio:false,deadline:'',days:[0,1,2,3,4,5,6]},
@@ -188,6 +188,8 @@ let S;try{S=JSON.parse(localStorage.getItem(KEY))||defaults();}catch(_){S=defaul
 if(!S.v2){const k1=S.kids.find(k=>k.id==='k1'),k2=S.kids.find(k=>k.id==='k2');
   if(k1&&k1.icon==='🐝'){k1.icon='🐶';if(k1.sub==='Ong nhỏ chăm chỉ')k1.sub='Cún con chăm chỉ';}
   if(k2&&k2.icon==='🐻'){k2.icon='🐭';if(k2.sub==='Gấu con dũng cảm')k2.sub='Chuột con lanh lợi';}S.v2=true;}
+/* Bản 3: tên đầy đủ Lam Vy / Lam Viên (chỉ khi vẫn là tên mặc định cũ) */
+if(!S.v3){for(const [id,old,nw] of [['k1','Vy','Lam Vy'],['k2','Viên','Lam Viên']]){const k=S.kids.find(x=>x.id===id);if(k&&k.name===old)k.name=nw;}S.v3=true;}
 function save(){S.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}}
 
 /* ================= Tiện ích ngày ================= */
@@ -309,23 +311,28 @@ const $=id=>document.getElementById(id);
 let restOn=false,restLock=null,idleTimer=0;
 function restTaskList(kidId,d){ // việc riêng + việc chung; chưa xong lên trước
   const own=sortT(tasksFor(kidId,d)).map(t=>({t,k:kidId})),sh=sortT(sharedFor(d)).map(t=>({t,k:'shared'}));
-  return [...own,...sh].map(x=>({...x,done:isDone(d,x.t.id,x.k)})).sort((a,b)=>a.done-b.done);
+  return [...own,...sh].map(x=>({...x,done:isDone(d,x.t.id,x.k)})); // giữ nguyên thứ tự để dấu tick hiện tại chỗ
 }
 function renderRest(){
   if(!restOn)return;const n=new Date(),d=today();
-  const cols=S.kids.map(k=>{const p=progress(k.id,d),list=restTaskList(k.id,d),show=list.filter(x=>!x.done),left=0,doneN=list.filter(x=>x.done).length;
-    const body=p.total&&p.done===p.total?`<div class="allok">🏆<br>${esc(k.name)} đã xong hết việc hôm nay!</div>`:
-      show.map(x=>`<div class="rt" data-t="${x.t.id}" data-k="${x.k}"><div class="box"></div><span>${esc(x.t.title)}${x.k==='shared'?' 🏠':''}${x.t.prio?' ★':''}</span></div>`).join('')+
-      `<div class="more" data-done="${doneN}">${doneN?`đã xong ${doneN} ✓`:''}</div>`;
+  const cols=S.kids.map(k=>{const p=progress(k.id,d),list=restTaskList(k.id,d),all=p.total&&p.done===p.total;
+    const body=list.map(x=>`<div class="rt${x.done?' done':''}" data-t="${x.t.id}" data-k="${x.k}"><div class="box">${x.done?'✓':''}</div><span>${esc(x.t.title)}${x.k==='shared'?' 🏠':''}${x.t.prio&&!x.done?' ★':''}</span></div>`).join('')+
+      `<div class="more" data-done="0">${all?'🏆 Xong hết việc hôm nay!':''}</div>`;
     return `<div class="rcol"><div class="rk"><span class="ic">${k.icon}</span><b>${esc(k.name)}</b><span class="pill inv">${p.done}/${p.total}</span><span class="pill">★ ${S.stars[k.id]||0}</span></div>${body}</div>`;}).join('');
   $('rest').innerHTML=`<button class="x" data-act="restOff">✕ Thoát</button>
     <div class="rh"><div class="clock">${pad(n.getHours())}:${pad(n.getMinutes())}</div><div class="day"><b>${WD[n.getDay()]}</b><span>${pad(n.getDate())}/${pad(n.getMonth()+1)}/${n.getFullYear()} · 🏁 Đua sao nhỏ</span></div></div>
     <div class="race">${raceHTML()}</div><div class="rcols">${cols}</div>
     <div class="rf"><span>Chạm vào việc để đánh dấu xong</span><span>${S.savedAt?'Cập nhật '+pad(new Date(S.savedAt).getHours())+':'+pad(new Date(S.savedAt).getMinutes()):''}</span></div>`;
-  // Chỉ giữ số việc vừa khung; phần còn lại ghi “+N việc nữa”
-  for(const col of document.querySelectorAll('#rest .rcol')){const more=col.querySelector('.more');if(!more)continue;let hid=0;
-    const upd=()=>{const dn=+more.dataset.done;more.textContent=[hid?`+ ${hid} việc nữa`:'',dn?`đã xong ${dn} ✓`:''].filter(Boolean).join(' · ');};
-    upd();let rows=[...col.querySelectorAll('.rt')];while(col.scrollHeight>col.clientHeight+1&&rows.length>1){rows.pop().remove();hid++;upd();}}
+  // Chữ to nhất mà cả hai cột vẫn vừa khung
+  const rc=document.querySelector('#rest .rcols'),cl=[...document.querySelectorAll('#rest .rcol')],over=()=>cl.some(c=>c.scrollHeight>c.clientHeight+1);
+  for(let s=30;s>=15;s--){rc.style.setProperty('--fs',s+'px');if(!over())break;}
+  // Vẫn không vừa thì ẩn bớt; phần còn lại ghi “+N việc nữa”
+  for(const col of cl){const more=col.querySelector('.more');if(!more)continue;let hid=0;
+    const base=more.textContent,upd=()=>{more.textContent=[hid?`+ ${hid} việc nữa`:'',base].filter(Boolean).join(' · ');};
+    // thiếu chỗ thì ẩn bớt việc ĐÃ XONG trước, rồi mới đến việc chưa xong ở cuối danh sách
+    const rows=[...col.querySelectorAll('.rt')];const order=[...rows.filter(r=>r.classList.contains('done')).reverse(),...rows.filter(r=>!r.classList.contains('done')).reverse()];
+    let doneHid=0;while(col.scrollHeight>col.clientHeight+1&&order.length>1){const r=order.shift();if(r.classList.contains('done'))doneHid++;else hid++;r.remove();
+      more.textContent=[hid?`+ ${hid} việc nữa`:'',doneHid?`+ ${doneHid} việc đã xong ✓`:'',base].filter(Boolean).join(' · ');}}
 }
 window.addEventListener('resize',()=>{if(restOn)renderRest();});
 async function restEnter(full){
