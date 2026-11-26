@@ -196,7 +196,7 @@
           <select id="artKind"><option value="tasks">Nhiệm vụ</option><option value="note">Lời nhắn / gia đình</option><option value="photo">Ảnh</option></select></label>
         <div class="row">
           <label><span>Vị trí ô giờ</span><select id="artPos"><option value="0">Trên bên trái</option><option value="1" selected>Trên bên phải</option><option value="2">Dưới bên trái</option><option value="3">Dưới bên phải</option></select></label>
-          <label><span>Kiểu ô giờ (theo đồng hồ của bạn)</span><select id="artBox"><option value="small">Ô nhỏ ở góc (máy mới)</option><option value="big">Ô lớn góc trên phải</option><option value="col">Cột bên trái</option></select></label>
+          <label><span>Kiểu ô giờ (theo đồng hồ của bạn)</span><select id="artBox"><option value="side">Giờ ở nửa phải – gửi thẳng từ trang này</option><option value="small">Ô nhỏ ở góc (Đồng hồ tranh)</option><option value="big">Ô lớn góc trên phải</option><option value="col">Cột bên trái</option></select></label>
         </div>
         <p class="hint">Xem trang gốc → “Đồng hồ và ảnh” → “Đồng hồ tranh”: dòng <i>Khung ảnh</i> cho biết đồng hồ của bạn dùng ô giờ kiểu nào.</p>
         <div data-art="tasks note"><label><span>Tiêu đề</span><input id="artTitle" type="text" maxlength="22" placeholder="Nhiệm vụ của Vy"></label></div>
@@ -286,7 +286,12 @@
       </div>
       <div class="live" id="artGuide" hidden>
         <b>⏱ Mẫu này dùng giờ tự chạy của đồng hồ</b>
-        <p>Ô nét đứt là chỗ đồng hồ <u>tự vẽ giờ mỗi phút</u> — không cần mở trang này, kể cả khi tắt Bluetooth.</p>
+        <p>Phần giờ là chỗ đồng hồ <u>tự vẽ giờ mỗi phút</u> — không cần mở trang này, kể cả khi tắt Bluetooth.</p>
+        <div id="artSideWrap">
+          <div class="actions"><button id="btnSendClock" class="primary">Gửi kèm đồng hồ tự chạy</button></div>
+          <p class="small-note">Thiết kế của bạn ở bên trái, đồng hồ tự vẽ giờ và ngày ở cột bên phải. Cần đồng hồ có phần mềm hỗ trợ “Đồng hồ và ảnh” (2.13": bản 40 trở lên; 2.9": bản 30 trở lên).</p>
+        </div>
+        <div id="artPngWrap">
         <div class="actions"><button id="btnArtPng" class="primary">Tải ảnh cho Đồng hồ tranh</button></div>
         <ol style="margin:10px 0 4px;padding-left:20px;font-size:13px;line-height:1.55">
           <li>Bấm nút trên để lưu ảnh (đúng cỡ <span id="artSizeTxt">250 × 128</span>).</li>
@@ -296,6 +301,7 @@
           <li>Bấm <b>Tải lên đồng hồ</b>. Xong — giờ tự chạy trên mẫu của bạn.</li>
         </ol>
         <p class="small-note">Nếu trang gốc báo cần cài dữ liệu, vào Cập nhật phần mềm → Cài đặt đồng hồ trước. Đồng hồ đời cũ có thể chưa có Đồng hồ tranh.</p>
+        </div>
       </div>
       <div id="liveBox" class="live" hidden>
         <b>⏱ Muốn giờ tự chạy mỗi phút?</b>
@@ -360,11 +366,12 @@ const STORE='nhan-eink-v1';
 const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','autoEvery','artKind','artPos','artBox','artTitle','artTasks','artMsg','artBy','artCaption','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
-function save(){const o={tab,v2:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
+function save(){const o={tab,v2:true,v3:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
 function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}catch(_){}
   for(const k of FIELDS)if(k in o){const el=$(k);if(el.type==='checkbox')el.checked=!!o[k];else el.value=o[k];}
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
   if(!o.v2){o.dashIcon='home';o.dashUpper=true;$('dashIcon').value='home';$('dashUpper').checked=true;} // bản 2: nhà + in hoa
+  if(!o.v3)$('artBox').value='side'; // bản 3: mặc định gửi thẳng kèm đồng hồ tự chạy
   const def={artTitle:'Nhiệm vụ của Vy',artTasks:'Đánh răng, rửa mặt\nx Dọn đồ chơi\nĐọc sách 15 phút\nTưới cây cùng mẹ',artMsg:'Cả nhà mình cùng cố gắng nhé!',artBy:'Gia đình Vy Viên',kid1Name:'Vy',kid2Name:'Viên',kid1Tasks:'Đánh răng, rửa mặt\nx Dọn đồ chơi\nĐọc sách 15 phút\nTưới cây cùng mẹ',kid2Tasks:'Gấp quần áo\nx Cho cá ăn\nLàm bài tập toán',
     tplName:'Cà phê sữa hòa tan',tplPrice:'59000',tplOld:'69000',tplUnit:'hộp',tplSpec:'Hộp 20 gói × 16 g',tplTitle:'Tạm nghỉ',tplBody:'Tôi sẽ quay lại ngay.\nXin cảm ơn!',tplContact:'',
     tplPhone:'090 123 4567',tplParkMsg:'Xin gọi khi cần di chuyển xe',tplCdText:'Tết Nguyên Đán',tplCdDate:'2027-02-06',
@@ -811,6 +818,7 @@ function tplCountdown(ctx,w,h){
    Ảnh phủ toàn màn; đồng hồ tự vẽ giờ trong một ô ở góc và tự chạy mỗi phút. */
 function artBox(w,h){
   const big=w===296,k=$('artBox').value,p=+$('artPos').value;
+  if(k==='side')return {x:big?194:148,y:0,w:102,h}; // đồng hồ tự vẽ giờ, ngày ở cột phải
   if(k==='col')return {x:0,y:0,w:big?80:72,h};
   if(k==='big')return {x:w-(big?120:104),y:0,w:big?120:104,h:big?80:72};
   const bw=big?120:104,bh=48;return {x:p&1?w-bw:0,y:p&2?h-bh:0,w:bw,h:bh};
@@ -821,13 +829,18 @@ function freeStrip(b,w,y0,y1,m=6){ // phần ngang còn trống của dải [y0,
 }
 function artPlaceholder(ctx,w,h){
   const b=artBox(w,h),d=new Date(),p=n=>String(n).padStart(2,'0');ctx.fillStyle=WHITE;ctx.fillRect(b.x,b.y,b.w,b.h);
+  if($('artBox').value==='side'){ // mô phỏng cột giờ do đồng hồ tự vẽ
+    ctx.fillStyle=INK;ctx.fillRect(b.x,0,1,h);ctx.textAlign='center';const cx=b.x+b.w/2;
+    setFont(ctx,11,700);ctx.fillText(`${['CN','T2','T3','T4','T5','T6','T7'][d.getDay()]} ${p(d.getDate())}/${p(d.getMonth()+1)}`,cx,18);
+    let s=34;setFont(ctx,s,800);while(ctx.measureText('88:88').width>b.w-8)setFont(ctx,--s,800);ctx.fillText(`${p(d.getHours())}:${p(d.getMinutes())}`,cx,h/2+s*0.35);
+    setFont(ctx,9,600);ctx.fillStyle='#999';ctx.fillText('(đồng hồ tự vẽ)',cx,h-8);ctx.textAlign='left';return;}
   ctx.fillStyle='#999';for(let i=0;i<b.w;i+=4){ctx.fillRect(b.x+i,b.y,2,1);ctx.fillRect(b.x+i,b.y+b.h-1,2,1);}for(let j=0;j<b.h;j+=4){ctx.fillRect(b.x,b.y+j,1,2);ctx.fillRect(b.x+b.w-1,b.y+j,1,2);}
   ctx.textAlign='center';let s=Math.min(30,Math.floor(b.h*0.55));setFont(ctx,s,800);while(ctx.measureText('88:88').width>b.w-8)setFont(ctx,--s,800);
   ctx.fillText(`${p(d.getHours())}:${p(d.getMinutes())}`,b.x+b.w/2,b.y+b.h/2+s*0.3);setFont(ctx,8,600);ctx.fillText('giờ tự chạy',b.x+b.w/2,b.y+b.h-4);ctx.textAlign='left';
 }
 function drawArt(ctx,w,h){
   const k=$('artKind').value,b=artBox(w,h);
-  if(k==='photo'){if(photo)ditherInto(ctx,0,0,w,h,true);else{setFont(ctx,12,500,SERIF);ctx.fillStyle=INK;const f=freeStrip(b,w,h/2-8,h/2+8);ctx.fillText('Chọn một tấm ảnh',f.x+8,h/2+4);}
+  if(k==='photo'){if(photo){if(b.h===h&&b.x>0)ditherInto(ctx,0,0,b.x,h,true);else if(b.h===h)ditherInto(ctx,b.w,0,w-b.w,h,true);else ditherInto(ctx,0,0,w,h,true);}else{setFont(ctx,12,500,SERIF);ctx.fillStyle=INK;const f=freeStrip(b,w,h/2-8,h/2+8);ctx.fillText('Chọn một tấm ảnh',f.x+8,h/2+4);}
     const cap=$('artCaption').value.trim();if(cap){const y0=b.y+b.h>=h?0:h-18,f=freeStrip(b,w,y0,y0+18,0);ctx.fillStyle=WHITE;ctx.fillRect(f.x,y0,f.w,18);ctx.fillStyle=accent();ctx.fillRect(f.x+6,y0+7,4,4);ctx.fillStyle=INK;setFont(ctx,11,700);ctx.fillText(ellipsize(ctx,cap,f.w-20),f.x+14,y0+13);}
     return;}
   const title=($('artTitle').value.trim()||(k==='tasks'?'Nhiệm vụ':'Gia đình')).toLocaleUpperCase('vi');
@@ -876,6 +889,7 @@ function kidFields(){const s=$('kidStyle').value;for(const el of document.queryS
   for(const el of document.querySelectorAll('[data-tpl]'))el.hidden=el.dataset.tpl!==$('tplKind').value;
   for(const el of document.querySelectorAll('[data-art]'))el.hidden=!el.dataset.art.split(' ').includes($('artKind').value);
   $('artPos').disabled=$('artBox').value!=='small';
+  {const side=$('artBox').value==='side';$('artSideWrap').hidden=!side;$('artPngWrap').hidden=side;}
   if(typeof artTarget==='function')$('toArtWrap').hidden=!artTarget();
   const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.some(p=>p.includes(el.dataset.split));}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();if(typeof scheduleThumbs==='function')scheduleThumbs();});}
@@ -932,12 +946,13 @@ $('photoFile').onchange=$('splitPhoto').onchange=$('artPhoto').onchange=e=>{cons
   img.onload=()=>{photo=img;schedule();};img.onerror=()=>say('Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG khác.',true);img.src=url;};
 function savePng(name){artExport=true;render();const a=document.createElement('a');a.download=name;a.href=$('cv').toDataURL('image/png');a.click();artExport=false;render();}
 $('btnPng').onclick=()=>savePng(`nhan-${tab}.png`);
+$('btnSendClock').onclick=()=>sendWithClock();
 $('btnArtPng').onclick=()=>savePng(`dong-ho-tranh-${$('optSize').value==='290'?'296x128':'250x128'}.png`);
 document.fonts?.ready?.then(schedule);
 
 /* ---------- Bluetooth (giao thức nRF52 của trang gốc, chỉ màn 2.13"/2.9") ---------- */
 const SVC='62750001-d828-918d-fb46-b6c11c675aec',CHR='62750002-d828-918d-fb46-b6c11c675aec',VER='62750003-d828-918d-fb46-b6c11c675aec';
-const CMD={INIT:0x01,REFRESH:0x05,SET_TIME:0x20,WRITE_IMAGE:0x30};
+const CMD={INIT:0x01,SEND_COMMAND:0x03,SEND_DATA:0x04,REFRESH:0x05,SET_TIME:0x20,WRITE_IMAGE:0x30};
 const ble={device:null,ch:null,version:0,model:null,panel:null,chunk:128,initWaiter:null,busy:false,job:null};
 function log(s){const el=$('log');el.textContent+=`[${new Date().toLocaleTimeString()}] ${s}\n`;el.scrollTop=el.scrollHeight;}
 function say(s,err=false){$('msg').textContent=s;$('msg').className='msg'+(err?' err':'');}
@@ -962,7 +977,7 @@ function onNotify(e){const v=e.target.value,data=new Uint8Array(v.buffer,v.byteO
   if(/^t=\d+\s*$/.test(text)){if(ble.initWaiter){ble.initWaiter(true);ble.initWaiter=null;log('Màn 2.9" đã sẵn sàng nhận ảnh.');}return;}
   if(text.startsWith('mtu=')){const mtu=parseInt(text.slice(4),10);if(mtu>2)ble.chunk=Math.max(18,Math.min(244,mtu-2));log(`MTU ${mtu}, gói ${ble.chunk} byte`);return;}
   if(data.length>=8&&data.length<=64&&[1,2,3,4,5,7].includes(data[7])&&data[0]!==0xfb&&data[0]!==0x21&&data[0]!==0xa0){
-    ble.model=data[7];ble.panel=data.length>13&&[0x21,0x29].includes(data[13])?data[13]:null;
+    ble.model=data[7];ble.panel=data.length>13&&[0x21,0x29].includes(data[13])?data[13]:null;ble.dispMode=data.length>11?data[11]:null;
     log(`Màn hình: model ${ble.model}${ble.panel?`, panel 0x${ble.panel.toString(16)}`:''}`);updateConn();}
 }
 /* Kết nối GATT tới thiết bị đã chọn. Dùng lại được để tự nối lại (không cần bấm chọn thiết bị lần nữa). */
@@ -1032,6 +1047,59 @@ async function send(){
   return ok;
 }
 
+/* ---------- Gửi mẫu kèm đồng hồ tự chạy (chế độ “Đồng hồ và ảnh” của đồng hồ) ----------
+   Làm theo đúng trình tự của trang gốc:
+   2.13": INIT → ghi cả khung 250×128 (ảnh ở trái 148 px) bằng WRITE_IMAGE → SET_TIME chế độ 0x83 → đồng hồ vẽ giờ bên phải.
+   2.9" : SET_TIME chế độ 0 → INIT (chờ “t=”) → ghi thẳng RAM vùng ảnh 194×128 → SET_TIME chế độ 0x83.               */
+async function sendWithClock(){
+  if(ble.busy)return false;
+  if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch||ble.model!==2)return false;}
+  const size=panelSize()||$('optSize').value,big=size==='290';
+  if(!panelSize()){say('Chưa nhận diện được cỡ màn nên chưa gửi kèm đồng hồ. Kết nối lại rồi thử.',true);return false;}
+  if(size!==$('optSize').value){$('optSize').value=size;}
+  if(!ble.version){say('Không đọc được phiên bản phần mềm đồng hồ nên chưa gửi kèm đồng hồ. Dùng nút Gửi thường hoặc trang gốc.',true);return false;}
+  if(ble.version<(big?30:40)){say(`Phần mềm đồng hồ (bản ${ble.version}) chưa hỗ trợ “Đồng hồ và ảnh”. Cập nhật phần mềm ở trang gốc trước.`,true);return false;}
+  if(big&&ble.dispMode===7){say('Đồng hồ 2.9" này dùng kiểu “Đồng hồ và ảnh” đặc biệt (mode 7). Hãy dùng mục Đồng hồ và ảnh ở trang gốc cho máy này.',true);return false;}
+  if($('artBox').value!=='side'){$('artBox').value='side';}
+  artExport=true;render();artExport=false;
+  const W=big?194:250,cv=document.createElement('canvas');cv.width=W;cv.height=128;const c=cv.getContext('2d');c.fillStyle=WHITE;c.fillRect(0,0,W,128);
+  c.drawImage($('cv'),0,0);if(!big){c.fillStyle=WHITE;c.fillRect(148,0,102,128);} // phần phải để trống cho đồng hồ
+  if(!$('optRed').checked){const im=c.getImageData(0,0,W,128);for(let i=0;i<im.data.length;i+=4)if(im.data[i+1]===0&&im.data[i]===255)im.data[i]=0;c.putImageData(im,0,0);}
+  render();
+  ble.busy=true;updateConn();$('btnCancel').hidden=false;$('prog').hidden=false;$('prog').value=0;
+  let failed=null;ble.job={fail:e=>{failed=failed||e;if(ble.initWaiter){ble.initWaiter(false);ble.initWaiter=null;}}};
+  const check=()=>{if(failed)throw failed;};
+  const write=async p=>{check();await ble.ch.writeValueWithResponse(p);check();};
+  const setTime=m=>{const ts=Math.floor(Date.now()/1000),tz=Math.round(-new Date().getTimezoneOffset()/60);return Uint8Array.of(CMD.SET_TIME,ts>>>24&255,ts>>>16&255,ts>>>8&255,ts&255,tz&255,m);};
+  const reg=async(r,data=[])=>{await write(Uint8Array.of(CMD.SEND_COMMAND,r));if(data.length)await write(Uint8Array.from([CMD.SEND_DATA,...data]));};
+  let ok=false;
+  try{
+    const black=toBytes(cv,'black'),red=toBytes(cv,'red');log(`Gửi kèm đồng hồ ${W}×128 (bản ${ble.version})`);
+    if(!big){
+      say('Đang chuẩn bị màn hình…');await write(Uint8Array.of(CMD.INIT));await sleep(150);
+      const plane=async(bytes,isBlack,a,b)=>{const ch=Math.max(1,Math.min(244,ble.chunk||18));
+        for(let o=0;o<bytes.length;o+=ch){await write(Uint8Array.from([CMD.WRITE_IMAGE,(o===0?0:0xf0)|(isBlack?0x0f:0),...bytes.slice(o,o+ch)]));$('prog').value=a+Math.min(o+ch,bytes.length)/bytes.length*(b-a);await sleep(8);}};
+      say('Đang gửi mẫu…');await plane(black,true,5,46);await plane(red,false,46,87);
+      say('Đang bật đồng hồ tự chạy và làm mới màn…');await write(setTime(0x83));$('prog').value=90;
+      for(let i=0;i<12;i++){await sleep(1000);check();}
+    }else{
+      say('Đang chuẩn bị màn hình…');await write(setTime(0));await sleep(150);
+      const ready=new Promise(r=>{ble.initWaiter=r;setTimeout(()=>r(false),45000);});await write(Uint8Array.of(CMD.INIT));
+      if(!await ready){check();throw new Error('Màn chưa sẵn sàng. Kết nối lại rồi thử.');}
+      const first=296-194,last=295;
+      const plane=async(bytes,isBlack,a,b)=>{await reg(0x11,[0x03]);await reg(0x45,[first&255,first>>8,last&255,last>>8]);await reg(0x4f,[first&255,first>>8]);await reg(isBlack?0x24:0x26);
+        const ch=Math.min(ble.chunk||128,240);for(let o=0;o<bytes.length;o+=ch){await write(Uint8Array.from([CMD.SEND_DATA,...bytes.slice(o,o+ch)]));$('prog').value=a+Math.min(o+ch,bytes.length)/bytes.length*(b-a);await sleep(8);}};
+      say('Đang gửi mẫu…');await plane(black,true,5,46);await plane(red,false,47,87);
+      say('Đang bật đồng hồ tự chạy và làm mới màn (khoảng 30 giây)…');await write(setTime(0x83));$('prog').value=90;
+      for(let i=0;i<32;i++){await sleep(1000);check();}
+    }
+    $('prog').value=100;ok=true;log('Đã gửi kèm đồng hồ.');
+    say('Xong! Mẫu của bạn ở bên trái, giờ bên phải do đồng hồ tự chạy mỗi phút — có thể đóng trang. (Bấm “Đồng hồ tự chạy”/“Lịch tự chạy” hoặc Gửi ảnh khác sẽ thay mẫu này.)');
+  }catch(e){say('Chưa gửi được: '+(e.message||e),true);log('Lỗi: '+(e.message||e));}
+  finally{ble.busy=false;ble.job=null;$('btnCancel').hidden=true;updateConn();}
+  return ok;
+}
+
 /* ---------- Tự cập nhật: vẽ lại và gửi lại theo chu kỳ để ngày giờ luôn đúng ---------- */
 const auto={on:false,timer:0,next:0,lock:null,fails:0};
 function nextAt(){const v=$('autoEvery').value,now=new Date();
@@ -1080,6 +1148,7 @@ async function liveMode(mode){
 $('btnToArt').onclick=()=>{const a=artTarget();if(!a)return;
   if(a.title)$('artTitle').value=a.title;if(a.tasks!=null)$('artTasks').value=a.tasks;if(a.msg!=null)$('artMsg').value=a.msg;if(a.by!=null)$('artBy').value=a.by;
   if(a.kind==='photo'&&tab==='photo')$('artCaption').value=$('photoCaption').value;
+  $('artBox').value='side';
   chooseLayout(LAYOUTS.find(l=>l.t==='art'&&l.value===a.kind));window.scrollTo({top:0});};
 $('btnLiveClock').onclick=()=>liveMode(2);$('btnLiveCal').onclick=()=>liveMode(1);
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
