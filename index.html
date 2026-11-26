@@ -81,6 +81,8 @@
     <button role="tab" data-t="dash" aria-selected="true">Bảng của tôi</button>
     <button role="tab" data-t="kids" aria-selected="false">Nhiệm vụ cho con</button>
     <button role="tab" data-t="split" aria-selected="false">Hai nửa</button>
+    <button role="tab" data-t="clk" aria-selected="false">Lịch &amp; đồng hồ</button>
+    <button role="tab" data-t="tpl" aria-selected="false">Mẫu thông dụng</button>
     <button role="tab" data-t="todo" aria-selected="false">Việc hôm nay</button>
     <button role="tab" data-t="cal" aria-selected="false">Ngày + lịch âm</button>
     <button role="tab" data-t="quote" aria-selected="false">Lời nhắc</button>
@@ -134,6 +136,49 @@
         <label data-split="tasks"><span>Tiêu đề nhiệm vụ</span><input id="splitTitle" type="text" maxlength="18" placeholder="Nhiệm vụ"></label>
         <label data-split="tasks"><span>Nhiệm vụ, mỗi dòng một việc (x ở đầu = đã xong)</span><textarea id="splitTasks" style="min-height:96px"></textarea></label>
         <p class="note" data-split="time">Giờ trên màn là lúc bấm gửi; màn e-ink không tự chạy giờ.</p>
+      </section>
+
+      <section class="panel" data-p="clk" hidden>
+        <label><span>Kiểu</span>
+          <select id="clkStyle">
+            <optgroup label="Đồng hồ"><option value="clock">Đồng hồ</option><option value="clock3d">Đồng hồ 3D</option><option value="flip">Đồng hồ lật + lịch</option><option value="bigdate">Đồng hồ và ngày lớn</option><option value="holiday">Đồng hồ nhắc ngày lễ</option><option value="calclock">Đồng hồ, thứ và ngày</option><option value="monthclock">Đồng hồ và lịch tháng</option></optgroup>
+            <optgroup label="Lịch"><option value="info">Lịch thông tin</option><option value="month">Lịch tháng lớn</option><option value="lunar">Lịch âm</option></optgroup>
+          </select></label>
+        <label data-clk="bigdate"><span>Câu nhắc dưới đồng hồ</span><input id="clkQuote" type="text" maxlength="60" placeholder="Hãy làm mỗi việc như việc cuối đời."></label>
+        <label><span>Ngày (mặc định hôm nay)</span><input id="clkDate" type="date"></label>
+        <label><span>Dòng ghi chú góc dưới (không bắt buộc)</span><input id="clkNote" type="text" maxlength="20" placeholder="Ví dụ: Nhà Vy Viên"></label>
+        <p class="note">Mặt lịch/đồng hồ của trang gốc do phần mềm trong đồng hồ tự chạy. Ở đây là ảnh tĩnh: giờ và ngày đứng yên từ lúc gửi. Gửi ảnh từ trang này sẽ thay mặt đồng hồ đang chạy; muốn quay lại đồng hồ tự chạy, chọn lại giao diện ở trang gốc.</p>
+      </section>
+
+      <section class="panel" data-p="tpl" hidden>
+        <label><span>Loại mẫu</span>
+          <select id="tplKind"><option value="price">Thẻ giá</option><option value="notice">Thẻ thông báo</option><option value="parking">Số điện thoại đỗ xe</option><option value="countdown">Đếm ngược ngày</option></select></label>
+        <div data-tpl="price">
+          <label><span>Tên sản phẩm</span><input id="tplName" type="text" maxlength="40"></label>
+          <div class="row">
+            <label><span>Giá bán (đ)</span><input id="tplPrice" type="text" inputmode="numeric" maxlength="12"></label>
+            <label><span>Giá cũ (để trống nếu không giảm)</span><input id="tplOld" type="text" inputmode="numeric" maxlength="12"></label>
+          </div>
+          <div class="row">
+            <label><span>Đơn vị</span><input id="tplUnit" type="text" maxlength="10"></label>
+            <label><span>Quy cách / ghi chú</span><input id="tplSpec" type="text" maxlength="32"></label>
+          </div>
+        </div>
+        <div data-tpl="notice">
+          <label><span>Mẫu có sẵn</span>
+            <select id="tplPreset"><option value="">— Tự viết —</option><option value="break">Tạm nghỉ</option><option value="hours">Giờ mở cửa</option><option value="call">Vui lòng gọi</option><option value="meeting">Đang họp</option><option value="sleep">Bé đang ngủ</option><option value="notouch">Vui lòng không chạm</option></select></label>
+          <label><span>Tiêu đề</span><input id="tplTitle" type="text" maxlength="24"></label>
+          <label><span>Nội dung</span><textarea id="tplBody" style="min-height:64px"></textarea></label>
+          <label><span>Liên hệ (không bắt buộc)</span><input id="tplContact" type="text" maxlength="24"></label>
+        </div>
+        <div data-tpl="parking">
+          <label><span>Số điện thoại</span><input id="tplPhone" type="tel" maxlength="16"></label>
+          <label><span>Lời nhắn</span><input id="tplParkMsg" type="text" maxlength="40"></label>
+        </div>
+        <div data-tpl="countdown">
+          <label><span>Ngày đích</span><input id="tplCdDate" type="date"></label>
+          <label><span>Sự kiện</span><input id="tplCdText" type="text" maxlength="30"></label>
+        </div>
       </section>
 
       <section class="panel" data-p="todo">
@@ -219,7 +264,7 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab,v2:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
@@ -228,6 +273,8 @@ function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}ca
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
   if(!o.v2){o.dashIcon='home';o.dashUpper=true;$('dashIcon').value='home';$('dashUpper').checked=true;} // bản 2: nhà + in hoa
   const def={kid1Name:'Vy',kid2Name:'Viên',kid1Tasks:'Đánh răng, rửa mặt\nx Dọn đồ chơi\nĐọc sách 15 phút\nTưới cây cùng mẹ',kid2Tasks:'Gấp quần áo\nx Cho cá ăn\nLàm bài tập toán',
+    tplName:'Cà phê sữa hòa tan',tplPrice:'59000',tplOld:'69000',tplUnit:'hộp',tplSpec:'Hộp 20 gói × 16 g',tplTitle:'Tạm nghỉ',tplBody:'Tôi sẽ quay lại ngay.\nXin cảm ơn!',tplContact:'',
+    tplPhone:'090 123 4567',tplParkMsg:'Xin gọi khi cần di chuyển xe',tplCdText:'Tết Nguyên Đán',tplCdDate:'2027-02-06',
     kidMission:'Tự xếp cặp sách cho ngày mai',splitTitle:'Việc của Vy',splitTasks:'Đánh răng\nx Dọn đồ chơi\nĐọc sách\nTưới cây',kidReward:'Đi công viên cuối tuần',dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
   for(const k in def)if(!(k in o))$(k).value=def[k];
   if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
@@ -479,6 +526,179 @@ function drawSplit(ctx,w,h){
   if(a!=='photo'&&b!=='photo'){ctx.fillStyle=INK;ctx.fillRect(lw,6,1,h-12);}else{ctx.fillStyle=INK;ctx.fillRect(lw,0,1,h);}
 }
 
+/* ---------- Lịch & đồng hồ ---------- */
+const MONTH_VN=['','Một','Hai','Ba','Tư','Năm','Sáu','Bảy','Tám','Chín','Mười','Mười Một','Mười Hai'];
+function clkDay(){const v=$('clkDate').value.split('-').map(Number);const n=new Date();return v.length===3&&v[0]?new Date(v[0],v[1]-1,v[2],n.getHours(),n.getMinutes()):n;}
+function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y0)/864e5+1)/7);}
+function monthGrid(ctx,x,y,w,h,days,today,plain=false){ // days: [{n, dow}]
+  const cw=w/7,hh=plain?11:13,hs=Math.min(10,Math.floor(cw*0.62));
+  if(!plain){ctx.fillStyle=INK;ctx.fillRect(x,y,w,hh);}
+  ['CN','T2','T3','T4','T5','T6','T7'].forEach((t,i)=>{const we=i===0||i===6;
+    if(!plain&&we){ctx.fillStyle=accent();ctx.fillRect(Math.round(x+i*cw),y,Math.round(cw),hh);}
+    ctx.fillStyle=plain?(we?accent():INK):WHITE;setFont(ctx,hs,plain?600:800);ctx.textAlign='center';ctx.fillText(t,x+i*cw+cw/2,y+hh-3);});
+  const off=days[0].dow,rows=Math.ceil((off+days.length)/7),rh=(h-hh-2)/rows;let s=Math.min(13,Math.floor(rh*0.8),Math.floor(cw*0.66));
+  days.forEach((d,i)=>{const k=off+i,col=k%7,row=Math.floor(k/7),cx=x+col*cw+cw/2,cy=y+hh+2+row*rh+rh/2;
+    if(d.n===today){ctx.fillStyle=accent();if(plain)ctx.fillRect(Math.round(cx-cw/2),Math.round(cy-rh/2),Math.round(cw),Math.round(rh));else{ctx.beginPath();ctx.arc(cx,cy,Math.min(cw,rh)/2+0.5,0,7);ctx.fill();}ctx.fillStyle=WHITE;}
+    else ctx.fillStyle=(col===0||col===6)?accent():INK;
+    setFont(ctx,s,plain?600:800);ctx.fillText(String(d.n),cx,Math.round(cy+s*0.36));});
+  ctx.textAlign='left';
+}
+function solarDays(d){const n=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(),f=new Date(d.getFullYear(),d.getMonth(),1).getDay();return Array.from({length:n},(_,i)=>({n:i+1,dow:(f+i)%7}));}
+function bigTime(ctx,x,y,w,h,d,style='solid',fam=SANS){
+  ctx.textAlign='left';const p=n=>String(n).padStart(2,'0'),hh=p(d.getHours()),mm=p(d.getMinutes()),gap=style==='solid'?12:14;
+  let s=110;setFont(ctx,s,800,fam);while(s>14&&(ctx.measureText(hh+mm).width+gap+(style==='3d'?4:0)>w||s*0.74>h))setFont(ctx,--s,800,fam);
+  const hw=ctx.measureText(hh).width,mw=ctx.measureText(mm).width,x0=x+(w-(hw+mw+gap))/2,base=Math.round(y+(h+s*0.72)/2);
+  const draw=(t,tx)=>{if(style==='3d'){ctx.fillStyle=INK;ctx.fillText(t,tx+3,base+3);ctx.fillStyle=WHITE;ctx.fillText(t,tx,base);ctx.strokeStyle=INK;ctx.lineWidth=Math.max(1.5,s/40);ctx.strokeText(t,tx,base);}else{ctx.fillStyle=INK;ctx.fillText(t,tx,base);}};
+  draw(hh,x0);draw(mm,x0+hw+gap);
+  const dot=Math.max(3,Math.round(s*0.08)),dx=Math.round(x0+hw+gap/2-dot/2);ctx.fillStyle=accent();
+  ctx.fillRect(dx,Math.round(base-s*0.5-dot/2),dot,dot);ctx.fillRect(dx,Math.round(base-s*0.18-dot/2),dot,dot);
+}
+const HOLIDAYS_SOLAR={'1/1':'Tết Dương lịch','14/2':'Lễ Tình nhân','8/3':'Quốc tế Phụ nữ','30/4':'Ngày Giải phóng','1/5':'Quốc tế Lao động','1/6':'Quốc tế Thiếu nhi','2/9':'Quốc khánh','20/10':'Ngày Phụ nữ Việt Nam','20/11':'Ngày Nhà giáo Việt Nam','24/12':'Giáng sinh'};
+const HOLIDAYS_LUNAR={'1/1':'Tết Nguyên Đán','15/1':'Rằm tháng Giêng','10/3':'Giỗ Tổ Hùng Vương','15/7':'Lễ Vu Lan','15/8':'Tết Trung thu','23/12':'Ông Công ông Táo'};
+function nextHoliday(d){const t=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  for(let i=0;i<400;i++){const x=new Date(t);x.setDate(t.getDate()+i);const s=HOLIDAYS_SOLAR[`${x.getDate()}/${x.getMonth()+1}`];if(s)return {name:s,days:i};
+    const L=Lunar.fromSolar(x.getDate(),x.getMonth()+1,x.getFullYear());if(!L.leap){const l=HOLIDAYS_LUNAR[`${L.day}/${L.month}`];if(l)return {name:l,days:i};}}return null;}
+function infoBoxes(ctx,x,w,h,boxes){ // [[đỏ, đen], ...] chia đều theo chiều cao
+  const bh=h/boxes.length,cx=x+w/2;ctx.textAlign='center';
+  boxes.forEach(([a,b],i)=>{const y=i*bh;if(i)ctx.fillStyle=INK,ctx.fillRect(x,Math.round(y),w,1);
+    let s=Math.min(18,Math.floor(bh*0.42));setFont(ctx,s,700);while(s>9&&ctx.measureText(a).width>w-6)setFont(ctx,--s,700);ctx.fillStyle=accent();ctx.fillText(a,cx,Math.round(y+bh*0.5));
+    let z=Math.min(11,Math.floor(bh*0.3));setFont(ctx,z,600);while(z>8&&ctx.measureText(b).width>w-6)setFont(ctx,--z,600);ctx.fillStyle=INK;ctx.fillText(ellipsize(ctx,b,w-4),cx,Math.round(y+bh*0.5+z+3));});
+  ctx.textAlign='left';
+}
+function sidePanel(ctx,x,w,h,top,big,bigRed,sub,lines){
+  const cx=x+w/2;ctx.textAlign='center';
+  setFont(ctx,14,800);ctx.fillStyle=bigRed?INK:accent();ctx.fillText(top,cx,17);
+  let s=56;setFont(ctx,s,700,SERIF);while(s>20&&(ctx.measureText(big).width>w-8||s>h*0.48))setFont(ctx,--s,700,SERIF);
+  ctx.fillStyle=bigRed?accent():INK;ctx.fillText(big,cx,Math.round(20+s*0.92));
+  const fitLine=(t,size,min)=>{let z=size;setFont(ctx,z,600);while(z>min&&ctx.measureText(t).width>w-6)setFont(ctx,--z,600);ctx.fillText(ellipsize(ctx,t,w-6),cx,ctx._y);};
+  ctx.fillStyle=INK;ctx._y=Math.round(20+s*0.92)+14;fitLine(sub,11,8);
+  const ly=h-lines.length*13-3;ctx.fillRect(x,ly-4,w,1);
+  lines.forEach((l,i)=>{ctx._y=ly+9+i*13;fitLine(l,10,8);});delete ctx._y;ctx.textAlign='left';
+}
+function drawClk(ctx,w,h){
+  const d=clkDay(),st=$('clkStyle').value,note=$('clkNote').value.trim(),L=Lunar.fromSolar(d.getDate(),d.getMonth()+1,d.getFullYear()),p=n=>String(n).padStart(2,'0');
+  const dmy=`${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`,amL=`Âm lịch ${p(L.day)}/${p(L.month)}`;
+  if(st==='clock'||st==='clock3d'){
+    setFont(ctx,13,700);ctx.fillStyle=accent();ctx.fillText(WD[d.getDay()],6,16);const ww=ctx.measureText(WD[d.getDay()]+' ').width;
+    ctx.fillStyle=INK;ctx.fillText(dmy,6+ww,16);
+    bigTime(ctx,6,22,w-12,h-46,d,st==='clock3d'?'3d':'solid');
+    ctx.fillStyle=INK;setFont(ctx,12,600);ctx.fillText(amL,6,h-6);
+    ctx.textAlign='right';ctx.fillText(ellipsize(ctx,note||'Năm '+Lunar.canChi(L.year),w/2-10),w-6,h-6);ctx.textAlign='left';return;
+  }
+  if(st==='flip'){
+    const lw=Math.round(w*0.6);ctx.fillStyle=INK;ctx.fillRect(lw,0,1,h);
+    const digits=(p(d.getHours())+p(d.getMinutes())).split(''),gap=8,cw=Math.floor((lw-8-gap-3*3)/4),ch=Math.round(Math.min(h-30,cw*1.6)),cy=Math.round((h-ch)/2);
+    let xx=4;let s=Math.round(ch*0.95);setFont(ctx,s,800);while(ctx.measureText('8').width>cw-4)setFont(ctx,--s,800);
+    digits.forEach((g,i)=>{if(i===2)xx+=gap;const r=4;ctx.fillStyle=INK;ctx.beginPath();ctx.roundRect(xx+0.5,cy+0.5,cw-1,ch-1,r);ctx.lineWidth=1.2;ctx.strokeStyle=INK;ctx.stroke();
+      ctx.textAlign='center';ctx.fillText(g,xx+cw/2,Math.round(cy+ch/2+s*0.36));ctx.fillStyle=WHITE;ctx.fillRect(xx+1,Math.round(cy+ch/2),cw-2,1);ctx.fillStyle=INK;ctx.fillRect(xx+2,Math.round(cy+ch/2)+1,cw-4,1);
+      ctx.fillRect(xx-1,Math.round(cy+ch/2)-2,2,5);ctx.fillRect(xx+cw-1,Math.round(cy+ch/2)-2,2,5);xx+=cw+3;});
+    ctx.textAlign='left';const cxl=4+2*cw+3+gap/2+1;ctx.fillStyle=accent();ctx.fillRect(Math.round(cxl),Math.round(h/2-ch*0.18),3,3);ctx.fillRect(Math.round(cxl),Math.round(h/2+ch*0.12),3,3);
+    ctx.fillStyle=INK;setFont(ctx,10,600);ctx.fillText(ellipsize(ctx,`${WD[d.getDay()]} · ${amL}`,lw-8),4,h-5);
+    const rx=lw+3,rw=w-rx-2;ctx.fillStyle=accent();ctx.fillRect(rx,2,rw,14);ctx.fillStyle=WHITE;setFont(ctx,10,700);ctx.textAlign='center';ctx.fillText(`Tháng ${d.getMonth()+1} / ${d.getFullYear()}`,rx+rw/2,12);ctx.textAlign='left';
+    monthGrid(ctx,rx,18,rw,h-19,solarDays(d),d.getDate(),true);return;
+  }
+  if(st==='bigdate'){
+    const lw=Math.round(w*0.66);ctx.fillStyle=INK;ctx.fillRect(lw,4,1,h-8);
+    const q=$('clkQuote').value.trim()||'Hãy làm mỗi việc như việc cuối đời.';
+    bigTime(ctx,4,4,lw-8,h*0.6,d);const f=fit(ctx,q,lw-12,h*0.34,{max:13,min:9,weight:500,lh:1.2,maxLines:2});ctx.fillStyle=INK;ctx.textAlign='center';
+    f.lines.forEach((l,i)=>ctx.fillText(l,lw/2,Math.round(h*0.66+f.size+i*f.lh)));
+    const rx=lw+1,rw=w-rx,cx=rx+rw/2;let s=48;setFont(ctx,s,800);while(ctx.measureText(String(d.getDate())).width>rw-8)setFont(ctx,--s,800);
+    ctx.fillStyle=accent();ctx.fillText(String(d.getDate()),cx,Math.round(4+s*0.8));ctx.fillStyle=INK;setFont(ctx,11,600);ctx.fillText(WD[d.getDay()],cx,Math.round(4+s*0.8)+14);
+    const ly=Math.round(4+s*0.8)+19;ctx.fillStyle=accent();ctx.fillRect(rx+4,ly,rw-8,1);
+    const lines=[[`Tháng ${d.getMonth()+1} / ${d.getFullYear()}`,accent()],[amL,INK],[note||'Năm '+Lunar.canChi(L.year),accent()]],lh=(h-ly-4)/3;
+    lines.forEach(([t,c],i)=>{let z=11;setFont(ctx,z,600);while(z>8&&ctx.measureText(t).width>rw-4)setFont(ctx,--z,600);ctx.fillStyle=c;ctx.fillText(t,cx,Math.round(ly+lh*(i+1)-2));});
+    ctx.textAlign='left';return;
+  }
+  if(st==='holiday'){
+    const lw=Math.round(w*0.68),hd=nextHoliday(d);ctx.fillStyle=INK;ctx.fillRect(lw,0,1,h);ctx.textAlign='center';setFont(ctx,12,600);ctx.fillText(`${WD[d.getDay()]} ${dmy}`,lw/2,14);
+    bigTime(ctx,4,18,lw-8,h*0.52,d,'solid');ctx.textAlign='center';ctx.fillStyle=INK;
+    if(hd){setFont(ctx,12,700);ctx.fillText(ellipsize(ctx,hd.name,lw-8),lw/2,h-20);
+      const pre='Còn ',num=String(hd.days),post=' ngày';setFont(ctx,12,600);const a=ctx.measureText(pre).width,b=ctx.measureText(num).width,c=ctx.measureText(post).width,x0=lw/2-(a+b+c)/2;
+      ctx.textAlign='left';if(hd.days===0){ctx.fillStyle=accent();ctx.textAlign='center';ctx.fillText('Hôm nay!',lw/2,h-5);}else{ctx.fillText(pre,x0,h-5);ctx.fillStyle=accent();ctx.fillText(num,x0+a,h-5);ctx.fillStyle=INK;ctx.fillText(post,x0+a+b,h-5);}}
+    ctx.textAlign='left';infoBoxes(ctx,lw+1,w-lw-1,h,[[String(d.getFullYear()),'Năm '+Lunar.canChi(L.year)],[`Tháng ${d.getMonth()+1}`,amL],[`Tuần ${isoWeek(d)}`,note||' ']]);return;
+  }
+  const gw=Math.round(w*0.68),sx=gw+1,sw=w-sx;ctx.fillStyle=INK;ctx.fillRect(gw,0,1,h);
+  if(st==='calclock'){
+    monthGrid(ctx,0,0,gw,h-16,solarDays(d),d.getDate());ctx.fillStyle=INK;setFont(ctx,11,600);ctx.textAlign='center';ctx.fillText(amL,gw/2,h-4);
+    setFont(ctx,11,700);ctx.fillText(`${p(d.getMonth()+1)}-${d.getFullYear()}`,sx+sw/2,12);ctx.fillRect(sx,16,sw,1);
+    const mh=Math.round(h*0.4);ctx.fillRect(sx+Math.round(sw*0.48),17,1,mh-17);ctx.fillRect(sx,mh,sw,1);
+    ctx.fillStyle=accent();const wd=WD[d.getDay()].split(' ');setFont(ctx,10,700);wd.forEach((t,i)=>ctx.fillText(t,sx+sw*0.24,17+(mh-17)/2-(wd.length-1)*6+i*12+4));
+    ctx.fillStyle=INK;let s=30;setFont(ctx,s,700);while(ctx.measureText(String(d.getDate())).width>sw*0.5-4)setFont(ctx,--s,700);ctx.fillText(String(d.getDate()),sx+sw*0.74,Math.round(17+(mh-17)/2+s*0.36));
+    ctx.textAlign='left';bigTime(ctx,sx+2,mh+2,sw-4,h-mh-16,d);ctx.fillStyle=INK;ctx.fillRect(sx,h-14,sw,1);setFont(ctx,9,600);ctx.textAlign='center';ctx.fillText(ellipsize(ctx,note||'Năm '+Lunar.canChi(L.year),sw-4),sx+sw/2,h-4);ctx.textAlign='left';return;
+  }
+  if(st==='monthclock'){
+    monthGrid(ctx,0,0,gw,h,solarDays(d),d.getDate());ctx.fillStyle=INK;setFont(ctx,9,600);ctx.textAlign='center';ctx.fillText(ellipsize(ctx,note||'Năm '+Lunar.canChi(L.year),sw-4),sx+sw/2,11);ctx.fillRect(sx,15,sw,1);
+    ctx.textAlign='left';bigTime(ctx,sx+2,17,sw-4,h*0.38,d);ctx.fillStyle=INK;const ly=Math.round(17+h*0.4);ctx.fillRect(sx,ly,sw,1);
+    ctx.textAlign='center';const lines=[[`${p(d.getDate())}-${p(d.getMonth()+1)}-${d.getFullYear()}`,accent()],[WD[d.getDay()],accent()],[amL,INK]],lh=(h-ly-2)/3;
+    lines.forEach(([t,c],i)=>{let z=11;setFont(ctx,z,600);while(z>8&&ctx.measureText(t).width>sw-4)setFont(ctx,--z,600);ctx.fillStyle=c;ctx.fillText(t,sx+sw/2,Math.round(ly+lh*(i+1)-2));});ctx.textAlign='left';return;
+  }
+  if(st==='info'){
+    monthGrid(ctx,0,0,gw,h,solarDays(d),d.getDate());
+    infoBoxes(ctx,sx,sw,h,[[String(d.getFullYear()),'Năm '+Lunar.canChi(L.year)],[`Tháng ${d.getMonth()+1}`,amL],[`Tuần ${isoWeek(d)}`,note||' ']]);return;
+  }
+  if(st==='month'){
+    monthGrid(ctx,0,0,gw,h,solarDays(d),d.getDate());
+    sidePanel(ctx,sx,sw,h,String(d.getFullYear()),String(d.getMonth()+1),true,'Tháng '+MONTH_VN[d.getMonth()+1],[`Âm lịch ${p(L.day)}/${p(L.month)}`,note||`Tuần ${isoWeek(d)}`]);
+  }else{
+    const start=new Date(d.getFullYear(),d.getMonth(),d.getDate()-(L.day-1));let len=29;
+    {const t=new Date(start);t.setDate(t.getDate()+29);if(Lunar.fromSolar(t.getDate(),t.getMonth()+1,t.getFullYear()).day===30)len=30;}
+    monthGrid(ctx,0,0,gw,h,Array.from({length:len},(_,i)=>({n:i+1,dow:(start.getDay()+i)%7})),L.day);
+    sidePanel(ctx,sx,sw,h,String(L.year),String(L.month),false,'Tháng '+Lunar.monthName(L.month)+(L.leap?' nhuận':''),[`Dương lịch ${p(d.getDate())}/${p(d.getMonth()+1)}`,note||`Năm ${Lunar.canChi(L.year)}`]);
+  }
+}
+
+/* ---------- Mẫu thông dụng ---------- */
+const PRESETS={break:['Tạm nghỉ','Tôi sẽ quay lại ngay.\nXin cảm ơn!',''],hours:['Giờ mở cửa','08:00 – 21:00\nTất cả các ngày',''],call:['Vui lòng gọi','Khi cần hỗ trợ\nxin liên hệ','090 123 4567'],
+  meeting:['Đang họp','Vui lòng chờ một chút\nhoặc nhắn tin',''],sleep:['Bé đang ngủ','Xin nhẹ tay, nhẹ tiếng\nCảm ơn ạ!',''],notouch:['Vui lòng không chạm','Hàng trưng bày\nXin cảm ơn!','']};
+const money=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const num=id=>{const v=String($(id).value).replace(/[^\d]/g,'');return v?Number(v):null;};
+function drawTpl(ctx,w,h){({price:tplPrice,notice:tplNotice,parking:tplParking,countdown:tplCountdown})[$('tplKind').value](ctx,w,h);}
+function tplPrice(ctx,w,h){
+  const m=8,price=num('tplPrice'),old=num('tplOld'),promo=old&&price&&old>price,spec=$('tplSpec').value.trim(),unit=$('tplUnit').value.trim();
+  let tagW=0;if(promo){const pct='-'+Math.round((old-price)/old*100)+'%';setFont(ctx,12,800);tagW=Math.ceil(ctx.measureText(pct).width)+10;
+    ctx.fillStyle=accent();ctx.fillRect(w-m-tagW,m,tagW,17);ctx.fillStyle=WHITE;ctx.textAlign='center';ctx.fillText(pct,w-m-tagW/2,m+13);ctx.textAlign='left';}
+  const f=fit(ctx,($('tplName').value.trim()||'Tên sản phẩm').toLocaleUpperCase('vi'),w-2*m-(tagW?tagW+6:0),34,{max:15,min:11,weight:800,lh:1.15,maxLines:2});
+  ctx.fillStyle=INK;f.lines.forEach((l,i)=>ctx.fillText(l,m,m+f.size+i*f.lh-1));
+  let y=m+f.lines.length*f.lh+2;if(spec){setFont(ctx,10,500);ctx.fillText(ellipsize(ctx,spec,w-2*m),m,y+10);y+=13;}
+  hline(ctx,m,w-m,y+3);
+  const u=unit?'đ / '+unit:'đ';setFont(ctx,11,700);const uw=ctx.measureText(u).width;
+  const pTxt=price!=null?money(price):'—',top=y+6,bottom=promo?h-16:h-6;let s=56;setFont(ctx,s,800);
+  while(s>18&&(ctx.measureText(pTxt).width>w-2*m-uw-6||s>bottom-top))setFont(ctx,--s,800);
+  ctx.fillStyle=promo?accent():INK;const base=Math.round(top+(bottom-top+s*0.72)/2);ctx.fillText(pTxt,m,base);
+  const pw=ctx.measureText(pTxt).width;ctx.fillStyle=INK;setFont(ctx,11,700);ctx.fillText(u,m+pw+5,base);
+  if(promo){setFont(ctx,10,500);const o=money(old)+'đ',ow=ctx.measureText(o).width;ctx.fillText(o,m,h-6);hline(ctx,m-1,m+ow+1,h-10);
+    setFont(ctx,10,700);ctx.fillStyle=accent();ctx.textAlign='right';ctx.fillText('Tiết kiệm '+money(old-price)+'đ',w-m,h-6);ctx.textAlign='left';}
+}
+function tplNotice(ctx,w,h){
+  const m=10,title=($('tplTitle').value.trim()||'Thông báo').toLocaleUpperCase('vi'),body=$('tplBody').value.trim(),contact=$('tplContact').value.trim();
+  ctx.fillStyle=accent();ctx.fillRect(Math.round(w/2-12),8,24,3);
+  const bodyLines=body?body.split('\n').length:0,cH=contact?16:0,tTop=16,tMax=bodyLines?Math.round((h-tTop-cH)*0.42):h-tTop-cH-6;
+  const ft=fit(ctx,title,w-2*m,tMax,{max:30,min:13,weight:800,lh:1.1,maxLines:2});ctx.fillStyle=INK;ctx.textAlign='center';
+  ft.lines.forEach((l,i)=>ctx.fillText(l,w/2,tTop+ft.size*0.9+i*ft.lh));let y=tTop+ft.lines.length*ft.lh+4;
+  if(body){const fb=fit(ctx,body,w-2*m,h-y-cH-4,{max:14,min:10,weight:500,lh:1.25,maxLines:4});fb.lines.forEach((l,i)=>ctx.fillText(l,w/2,y+fb.size+i*fb.lh));}
+  if(contact){hline(ctx,m+30,w-m-30,h-17);setFont(ctx,11,700);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,contact,w-2*m),w/2,h-5);}
+  ctx.textAlign='left';
+}
+function tplParking(ctx,w,h){
+  const m=8,phone=$('tplPhone').value.trim()||'090 000 0000',msg=$('tplParkMsg').value.trim();
+  ctx.fillStyle=INK;setFont(ctx,10,800);spaced(ctx,'LIÊN HỆ CHỦ XE',w/2,18,1.6,'center');ctx.fillStyle=accent();ctx.fillRect(Math.round(w/2-14),23,28,2);
+  let s=60;setFont(ctx,s,800);while(s>16&&(ctx.measureText(phone).width>w-2*m||s>h-62))setFont(ctx,--s,800);
+  ctx.fillStyle=INK;ctx.textAlign='center';ctx.fillText(phone,w/2,Math.round(28+(h-28-22+s*0.72)/2));
+  if(msg){setFont(ctx,11,600);ctx.fillText(ellipsize(ctx,msg,w-2*m),w/2,h-9);}ctx.textAlign='left';
+}
+function tplCountdown(ctx,w,h){
+  const v=$('tplCdDate').value.split('-').map(Number),t0=new Date();t0.setHours(0,0,0,0);
+  const target=v.length===3&&v[0]?new Date(v[0],v[1]-1,v[2]):t0,days=Math.round((target-t0)/864e5),ev=$('tplCdText').value.trim()||'Ngày đặc biệt';
+  const split=Math.round(w*0.46),cx=split/2;ctx.fillStyle=INK;ctx.textAlign='center';
+  if(days>0){setFont(ctx,11,800);spaced(ctx,'CÒN',cx,20,2,'center');ctx.textAlign='center';const n=String(days);let s=64;setFont(ctx,s,800,SERIF);while(ctx.measureText(n).width>split-14)setFont(ctx,--s,800,SERIF);
+    ctx.fillStyle=accent();ctx.fillText(n,cx,Math.round(h*0.72));ctx.fillStyle=INK;setFont(ctx,11,800);spaced(ctx,'NGÀY',cx,h-9,2,'center');}
+  else{setFont(ctx,days===0?22:16,800,SERIF);ctx.fillStyle=accent();ctx.fillText(days===0?'Hôm nay!':'Đã qua',cx,h/2+8);}
+  ctx.textAlign='left';ctx.fillStyle=INK;ctx.fillRect(split,14,1,h-28);
+  const x=split+12,rw=w-x-8;setFont(ctx,10,700);ctx.fillStyle=accent();spaced(ctx,'ĐẾM NGƯỢC',x,22,1.4);
+  const f=fit(ctx,ev,rw,50,{max:20,min:11,weight:700,fam:SERIF,lh:1.15,maxLines:3});ctx.fillStyle=INK;f.lines.forEach((l,i)=>ctx.fillText(l,x,32+f.size+i*f.lh));
+  hline(ctx,x,w-8,h-24);const p=n=>String(n).padStart(2,'0');setFont(ctx,11,600);ctx.fillText(`${WD[target.getDay()]}, ${p(target.getDate())}/${p(target.getMonth()+1)}/${target.getFullYear()}`,x,h-9);
+}
+
 function drawPhoto(ctx,w,h){
   const cap=$('photoCaption').value.trim(),ph=cap?h-20:h;
   if(!photo){ctx.fillStyle=INK;setFont(ctx,12,500,SERIF);ctx.textAlign='center';ctx.fillText('Chọn một tấm ảnh từ máy',w/2,ph/2+4);ctx.textAlign='left';hline(ctx,w/2-30,w/2+30,ph/2+12);}
@@ -494,12 +714,14 @@ function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
 function render(){
   const size=$('optSize').value,g=SIZES[size],cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,kids:drawKids,split:drawSplit,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}`;
 }
 function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);
+  for(const el of document.querySelectorAll('[data-clk]'))el.hidden=el.dataset.clk!==$('clkStyle').value;
+  for(const el of document.querySelectorAll('[data-tpl]'))el.hidden=el.dataset.tpl!==$('tplKind').value;
   const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.includes(el.dataset.split);}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();});}
 
@@ -507,6 +729,7 @@ function setTab(t){tab=t;for(const b of document.querySelectorAll('nav.tabs butt
   for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;schedule();}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
 document.querySelectorAll('input,textarea,select').forEach(el=>{if(el.type!=='file')el.addEventListener('input',schedule);});
+$('tplPreset').addEventListener('change',()=>{const p=PRESETS[$('tplPreset').value];if(!p)return;[$('tplTitle').value,$('tplBody').value,$('tplContact').value]=p;schedule();});
 $('photoFile').onchange=$('splitPhoto').onchange=e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),img=new Image();
   img.onload=()=>{photo=img;schedule();};img.onerror=()=>say('Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG khác.',true);img.src=url;};
 $('btnPng').onclick=()=>{const a=document.createElement('a');a.download=`nhan-${tab}.png`;a.href=$('cv').toDataURL('image/png');a.click();};
