@@ -80,6 +80,7 @@
   <nav class="tabs" role="tablist">
     <button role="tab" data-t="dash" aria-selected="true">Bảng của tôi</button>
     <button role="tab" data-t="kids" aria-selected="false">Nhiệm vụ cho con</button>
+    <button role="tab" data-t="split" aria-selected="false">Hai nửa</button>
     <button role="tab" data-t="todo" aria-selected="false">Việc hôm nay</button>
     <button role="tab" data-t="cal" aria-selected="false">Ngày + lịch âm</button>
     <button role="tab" data-t="quote" aria-selected="false">Lời nhắc</button>
@@ -123,6 +124,16 @@
         <label data-kid="hero"><span>Nhiệm vụ đặc biệt</span><textarea id="kidMission" style="min-height:70px"></textarea></label>
         <label data-kid="stars hero"><span>Phần thưởng khi hoàn thành (không bắt buộc)</span><input id="kidReward" type="text" maxlength="36"></label>
         <p class="hint" data-kid="stars duo">Thêm <b>x</b> ở đầu dòng khi con làm xong: ngôi sao/ô sẽ được tô kín và đếm vào tổng.</p>
+      </section>
+
+      <section class="panel" data-p="split" hidden>
+        <label><span>Kiểu ghép</span>
+          <select id="splitMode"><option value="photo-time">Ảnh │ Thời gian</option><option value="time-tasks">Thời gian │ Nhiệm vụ</option><option value="photo-tasks">Ảnh │ Nhiệm vụ</option></select></label>
+        <label class="check"><input id="splitSwap" type="checkbox"> Đổi bên trái ↔ phải</label>
+        <label data-split="photo"><span>Ảnh (dùng chung với tab Ảnh)</span><input id="splitPhoto" type="file" accept="image/*"></label>
+        <label data-split="tasks"><span>Tiêu đề nhiệm vụ</span><input id="splitTitle" type="text" maxlength="18" placeholder="Nhiệm vụ"></label>
+        <label data-split="tasks"><span>Nhiệm vụ, mỗi dòng một việc (x ở đầu = đã xong)</span><textarea id="splitTasks" style="min-height:96px"></textarea></label>
+        <p class="note" data-split="time">Giờ trên màn là lúc bấm gửi; màn e-ink không tự chạy giờ.</p>
       </section>
 
       <section class="panel" data-p="todo">
@@ -208,7 +219,7 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab,v2:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
@@ -217,7 +228,7 @@ function load(){let o={};try{o=JSON.parse(localStorage.getItem(STORE)||'{}');}ca
   if(!$('todoText').value)$('todoText').value='Gửi báo cáo tuần\n! Gọi cho mẹ lúc 7 giờ\nĐọc 20 trang sách\nx Đi chợ';
   if(!o.v2){o.dashIcon='home';o.dashUpper=true;$('dashIcon').value='home';$('dashUpper').checked=true;} // bản 2: nhà + in hoa
   const def={kid1Name:'Vy',kid2Name:'Viên',kid1Tasks:'Đánh răng, rửa mặt\nx Dọn đồ chơi\nĐọc sách 15 phút\nTưới cây cùng mẹ',kid2Tasks:'Gấp quần áo\nx Cho cá ăn\nLàm bài tập toán',
-    kidMission:'Tự xếp cặp sách cho ngày mai',kidReward:'Đi công viên cuối tuần',dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
+    kidMission:'Tự xếp cặp sách cho ngày mai',splitTitle:'Việc của Vy',splitTasks:'Đánh răng\nx Dọn đồ chơi\nĐọc sách\nTưới cây',kidReward:'Đi công viên cuối tuần',dashName:'Gia đình Vy Viên',m1Label:'Công việc',m1Pct:'27',m2Label:'Tuần',m2Pct:'5',dashItems:'Cả ngày | ! Tuần lễ sách và văn hóa đọc\n16:30 Gặp chị Lan\nx Gửi báo cáo tuần'};
   for(const k in def)if(!(k in o))$(k).value=def[k];
   if(!$('quoteText').value)$('quoteText').value='Chậm lại một chút, mọi thứ vẫn kịp.';
   const t=new Date();$('calDate').value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
@@ -423,19 +434,55 @@ function drawQuote(ctx,w,h){
   if(by){setFont(ctx,10,600);ctx.fillStyle=INK;spaced(ctx,'— '+by.toUpperCase(),w/2,h-9,1,'center');}
 }
 
-function drawPhoto(ctx,w,h){
-  const cap=$('photoCaption').value.trim(),ph=cap?h-20:h;
-  if(!photo){ctx.fillStyle=INK;setFont(ctx,12,500,SERIF);ctx.textAlign='center';ctx.fillText('Chọn một tấm ảnh từ máy',w/2,ph/2+4);ctx.textAlign='left';hline(ctx,w/2-30,w/2+30,ph/2+12);}
-  else{
+function ditherInto(ctx,x0,y0,w,ph,cover=true){ // ảnh đen trắng dạng chấm (Floyd–Steinberg)
     const tmp=document.createElement('canvas');tmp.width=w;tmp.height=ph;const t=tmp.getContext('2d');t.fillStyle=WHITE;t.fillRect(0,0,w,ph);
-    const cover=$('photoFit').value==='cover',sc=cover?Math.max(w/photo.width,ph/photo.height):Math.min(w/photo.width,ph/photo.height);
+    const sc=cover?Math.max(w/photo.width,ph/photo.height):Math.min(w/photo.width,ph/photo.height);
     const dw=photo.width*sc,dh=photo.height*sc;t.imageSmoothingQuality='high';t.drawImage(photo,(w-dw)/2,(ph-dh)/2,dw,dh);
     const im=t.getImageData(0,0,w,ph),a=im.data,b=+$('photoBright').value,c=+$('photoContrast').value,cf=(259*(c+255))/(255*(259-c));
     const g=new Float32Array(w*ph);for(let i=0;i<w*ph;i++){const y=a[i*4]*.299+a[i*4+1]*.587+a[i*4+2]*.114;g[i]=cf*(y-128)+128+b;}
-    for(let y=0;y<ph;y++)for(let x=0;x<w;x++){const i=y*w+x,o=g[i],n=o<128?0:255,e=o-n;g[i]=n; // Floyd–Steinberg
+    for(let y=0;y<ph;y++)for(let x=0;x<w;x++){const i=y*w+x,o=g[i],n=o<128?0:255,e=o-n;g[i]=n;
       if(x+1<w)g[i+1]+=e*7/16;if(y+1<ph){if(x>0)g[i+w-1]+=e*3/16;g[i+w]+=e*5/16;if(x+1<w)g[i+w+1]+=e/16;}}
-    for(let i=0;i<w*ph;i++){a[i*4]=a[i*4+1]=a[i*4+2]=g[i];a[i*4+3]=255;}ctx.putImageData(im,0,0);
-  }
+    for(let i=0;i<w*ph;i++){a[i*4]=a[i*4+1]=a[i*4+2]=g[i];a[i*4+3]=255;}ctx.putImageData(im,x0,y0);
+}
+
+/* ---------- Hai nửa: ảnh / thời gian / nhiệm vụ ---------- */
+function halfPhoto(ctx,x,y,w,h){
+  if(photo){ditherInto(ctx,x,y,w,h,true);return;}
+  ctx.fillStyle=INK;for(let i=0;i<w;i+=2){ctx.fillRect(x+i,y,1,1);ctx.fillRect(x+i,y+h-1,1,1);}for(let j=0;j<h;j+=2){ctx.fillRect(x,y+j,1,1);ctx.fillRect(x+w-1,y+j,1,1);}
+  setFont(ctx,11,500,SERIF);ctx.textAlign='center';ctx.fillText('Chọn ảnh',x+w/2,y+h/2+4);ctx.textAlign='left';
+}
+function halfTime(ctx,x,y,w,h){
+  const d=new Date(),p=n=>String(n).padStart(2,'0'),L=Lunar.fromSolar(d.getDate(),d.getMonth()+1,d.getFullYear()),cx=x+w/2;
+  ctx.textAlign='center';ctx.fillStyle=INK;setFont(ctx,11,700);ctx.fillText(WD[d.getDay()].toLocaleUpperCase('vi'),cx,y+19);
+  const tm=`${p(d.getHours())}:${p(d.getMinutes())}`;let s=Math.min(44,Math.round(h*0.36));setFont(ctx,s,700);while(s>18&&ctx.measureText(tm).width>w-10)setFont(ctx,--s,700);
+  ctx.fillText(tm,cx,y+Math.round(h*0.56));
+  setFont(ctx,12,700);ctx.fillText(`${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`,cx,y+Math.round(h*0.56)+19);
+  ctx.fillStyle=accent();setFont(ctx,10,600);ctx.fillText(ellipsize(ctx,`Âm ${L.day}/${L.month}${L.leap?' nhuận':''} · ${Lunar.canChi(L.year)}`,w-8),cx,y+h-8);
+  ctx.textAlign='left';
+}
+function halfTasks(ctx,x,y,w,h){
+  const m=5,list=tasks('splitTasks'),done=list.filter(t=>t.done).length,title=($('splitTitle').value.trim()||'Nhiệm vụ').toLocaleUpperCase('vi');
+  setFont(ctx,10,700);const cnt=list.length?`${done}/${list.length}`:'',cw=ctx.measureText(cnt).width;
+  star(ctx,x+m+5,y+11,5,true);setFont(ctx,12,800);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,title,w-m*2-14-cw-6),x+m+13,y+16);
+  if(cnt){setFont(ctx,10,700);ctx.fillStyle=INK;ctx.textAlign='right';ctx.fillText(cnt,x+w-m,y+15);ctx.textAlign='left';}
+  hline(ctx,x+m,x+w-m,y+21);
+  const top=y+26,avail=y+h-3-top;let size=12,rowH;for(;size>=9;size--){rowH=size+6;if(list.length*rowH<=avail)break;}
+  list.slice(0,Math.max(1,Math.floor(avail/rowH))).forEach((it,i)=>{const ry=top+i*rowH,bs=size-2;box(ctx,x+m,ry+Math.round((rowH-bs)/2)-1,bs,it.done);
+    setFont(ctx,size,it.done?400:600);ctx.fillStyle=INK;const tx=x+m+bs+5,t=ellipsize(ctx,it.t,x+w-m-tx),by=ry+Math.round(rowH/2+size*0.36)-1;ctx.fillText(t,tx,by);
+    if(it.done)hline(ctx,tx,tx+ctx.measureText(t).width,Math.round(by-size*0.32));});
+  if(!list.length){setFont(ctx,11,500,SERIF);ctx.fillStyle=INK;ctx.fillText('Chưa có nhiệm vụ',x+m,top+14);}
+}
+function drawSplit(ctx,w,h){
+  let [a,b]=$('splitMode').value.split('-');if($('splitSwap').checked)[a,b]=[b,a];
+  const R={photo:0.5,time:0.42,tasks:0.58},lw=Math.round(w*R[a]/(R[a]+R[b])),F={photo:halfPhoto,time:halfTime,tasks:halfTasks};
+  F[a](ctx,0,0,lw,h);F[b](ctx,lw+1,0,w-lw-1,h);
+  if(a!=='photo'&&b!=='photo'){ctx.fillStyle=INK;ctx.fillRect(lw,6,1,h-12);}else{ctx.fillStyle=INK;ctx.fillRect(lw,0,1,h);}
+}
+
+function drawPhoto(ctx,w,h){
+  const cap=$('photoCaption').value.trim(),ph=cap?h-20:h;
+  if(!photo){ctx.fillStyle=INK;setFont(ctx,12,500,SERIF);ctx.textAlign='center';ctx.fillText('Chọn một tấm ảnh từ máy',w/2,ph/2+4);ctx.textAlign='left';hline(ctx,w/2-30,w/2+30,ph/2+12);}
+  else ditherInto(ctx,0,0,w,ph,$('photoFit').value==='cover');
   if(cap){ctx.fillStyle=WHITE;ctx.fillRect(0,ph,w,h-ph);hline(ctx,0,w,ph);ctx.fillStyle=accent();ctx.fillRect(9,ph+8,4,4);
     ctx.fillStyle=INK;setFont(ctx,11,600);ctx.fillText(ellipsize(ctx,cap,w-30),18,h-5);}
 }
@@ -447,19 +494,20 @@ function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
 function render(){
   const size=$('optSize').value,g=SIZES[size],cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,kids:drawKids,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,split:drawSplit,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}`;
 }
-function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);}
+function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);
+  const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.includes(el.dataset.split);}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();});}
 
 function setTab(t){tab=t;for(const b of document.querySelectorAll('nav.tabs button'))b.setAttribute('aria-selected',b.dataset.t===t);
   for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;schedule();}
 document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
-document.querySelectorAll('input,textarea,select').forEach(el=>{if(el.id!=='photoFile')el.addEventListener('input',schedule);});
-$('photoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),img=new Image();
+document.querySelectorAll('input,textarea,select').forEach(el=>{if(el.type!=='file')el.addEventListener('input',schedule);});
+$('photoFile').onchange=$('splitPhoto').onchange=e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),img=new Image();
   img.onload=()=>{photo=img;schedule();};img.onerror=()=>say('Không đọc được ảnh này. Hãy thử ảnh JPG hoặc PNG khác.',true);img.src=url;};
 $('btnPng').onclick=()=>{const a=document.createElement('a');a.download=`nhan-${tab}.png`;a.href=$('cv').toDataURL('image/png');a.click();};
 document.fonts?.ready?.then(schedule);
