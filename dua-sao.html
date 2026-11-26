@@ -39,7 +39,8 @@
   .track{position:relative;height:34px;border:2px solid #000;border-radius:18px;background:repeating-linear-gradient(90deg,transparent 0 12px,#bbb 12px 13px)}
   .track .fill{position:absolute;left:0;top:0;bottom:0;border-radius:16px;background:repeating-linear-gradient(45deg,#000 0 3px,#fff 3px 7px);opacity:.35}
   .track .runner{position:absolute;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid #000;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:18px}
-  .flag{width:34px;height:34px;border:2px solid #000;border-radius:6px;background:conic-gradient(#000 0 25%,#fff 0 50%,#000 0 75%,#fff 0) 0 0/12px 12px}
+  .flag{width:34px;height:34px;display:grid;place-items:center;font-size:24px;line-height:1;border:2px dashed #000;border-radius:50%}
+  .flag.won{border-style:solid;border-width:3px;background:#000}
   .cheer{text-align:center;font-style:italic;font-size:14px;margin:4px 0 0}
 
   /* Nội dung */
@@ -113,7 +114,7 @@
   #rest .race{border:0;padding:8px 0 2px}
   #rest .lane{grid-template-columns:96px 1fr 38px}
   #rest .lane .who b{font-size:20px}.lane .who span{font-size:13px}
-  #rest .track{height:40px}#rest .track .runner{width:40px;height:40px;margin:-20px 0 0 -20px;font-size:22px}#rest .flag{width:38px;height:38px}
+  #rest .track{height:40px}#rest .track .runner{width:40px;height:40px;margin:-20px 0 0 -20px;font-size:22px}#rest .flag{width:40px;height:40px;font-size:28px}
   #rest .cheer{font-size:17px;margin:2px 0 6px}
   #rest .rcols{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:2px solid #000}
   #rest .rcol{padding:8px 10px;min-width:0;overflow:hidden;display:flex;flex-direction:column}
@@ -235,7 +236,7 @@ function renderRace(){$('race').innerHTML=raceHTML();}
 function raceHTML(){
   const d=today(),ps=S.kids.map(k=>({k,...progress(k.id,d)}));
   let html=ps.map(p=>`<div class="lane"><div class="who"><b>${esc(p.k.name)}</b><span>${p.done}/${p.total} · ${p.pct}%</span></div>
-    <div class="track"><div class="fill" style="width:${p.pct}%"></div><div class="runner" style="left:calc(17px + (100% - 34px) * ${p.pct/100})">${p.k.icon}</div></div><div class="flag" title="Đích"></div></div>`).join('');
+    <div class="track"><div class="fill" style="width:${p.pct}%"></div><div class="runner" style="left:calc(17px + (100% - 34px) * ${p.pct/100})">${p.k.icon}</div></div><div class="flag${p.total&&p.pct===100?' won':''}" title="Đích">🏆</div></div>`).join('');
   const [a,b]=ps;let msg;
   if(!a.total&&!b.total)msg='Hôm nay chưa có nhiệm vụ nào.';
   else if(a.pct===100&&b.pct===100)msg='Cả hai đã về đích! Tuyệt vời quá! 🎉';
