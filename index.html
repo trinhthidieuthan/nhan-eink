@@ -138,7 +138,7 @@
 
       <section class="panel" data-p="split" hidden>
         <label><span>Kiểu ghép</span>
-          <select id="splitMode"><option value="photo-time">Ảnh │ Thời gian</option><option value="time-tasks">Thời gian │ Nhiệm vụ</option><option value="photo-tasks">Ảnh │ Nhiệm vụ</option></select></label>
+          <select id="splitMode"><option value="photo-time">Ảnh │ Thời gian</option><option value="time-tasks">Thời gian │ Nhiệm vụ</option><option value="photo-tasks">Ảnh │ Nhiệm vụ</option><option value="photo-timetasks">Ảnh │ Thời gian + Nhiệm vụ</option></select></label>
         <label class="check"><input id="splitSwap" type="checkbox"> Đổi bên trái ↔ phải</label>
         <label data-split="photo"><span>Ảnh (dùng chung với tab Ảnh)</span><input id="splitPhoto" type="file" accept="image/*"></label>
         <label data-split="tasks"><span>Tiêu đề nhiệm vụ</span><input id="splitTitle" type="text" maxlength="18" placeholder="Nhiệm vụ"></label>
@@ -527,9 +527,21 @@ function halfTasks(ctx,x,y,w,h){
     if(it.done)hline(ctx,tx,tx+ctx.measureText(t).width,Math.round(by-size*0.32));});
   if(!list.length){setFont(ctx,11,500,SERIF);ctx.fillStyle=INK;ctx.fillText('Chưa có nhiệm vụ',x+m,top+14);}
 }
+function halfTimeTasks(ctx,x,y,w,h){
+  const m=5,d=new Date(),p=n=>String(n).padStart(2,'0'),list=tasks('splitTasks'),done=list.filter(t=>t.done).length,th=Math.round(h*0.36);
+  setFont(ctx,10,700);ctx.fillStyle=INK;ctx.fillText(ellipsize(ctx,`${WD[d.getDay()]} ${p(d.getDate())}/${p(d.getMonth()+1)}`,w-m*2-34),x+m,y+12);
+  if(list.length){const c=`${done}/${list.length}`;setFont(ctx,10,700);const cw=ctx.measureText(c).width;ctx.fillStyle=INK;ctx.textAlign='right';ctx.fillText(c,x+w-m,y+12);ctx.textAlign='left';star(ctx,x+w-m-cw-7,y+8,4.5,true);}
+  bigTime(ctx,x+m,y+15,w-m*2,th-15,d);
+  const ly=y+th+3;ctx.fillStyle=INK;ctx.fillRect(x+m,ly,w-m*2,1);
+  const title=($('splitTitle').value.trim()||'Nhiệm vụ').toLocaleUpperCase('vi');setFont(ctx,10,800);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,title,w-m*2),x+m,ly+12);
+  const top=ly+15,avail=y+h-2-top;let size=12,rowH;for(;size>=9;size--){rowH=size+3;if(list.length*rowH<=avail)break;}
+  list.slice(0,Math.max(1,Math.floor(avail/rowH))).forEach((it,i)=>{const ry=top+i*rowH,bs=size-3;box(ctx,x+m,ry+Math.round((rowH-bs)/2)-1,bs,it.done);
+    setFont(ctx,size,it.done?400:600);ctx.fillStyle=INK;const tx=x+m+bs+4,t=ellipsize(ctx,it.t,x+w-m-tx),by=ry+Math.round(rowH/2+size*0.36)-1;ctx.fillText(t,tx,by);
+    if(it.done)hline(ctx,tx,tx+ctx.measureText(t).width,Math.round(by-size*0.32));});
+}
 function drawSplit(ctx,w,h){
   let [a,b]=$('splitMode').value.split('-');if($('splitSwap').checked)[a,b]=[b,a];
-  const R={photo:0.5,time:0.42,tasks:0.58},lw=Math.round(w*R[a]/(R[a]+R[b])),F={photo:halfPhoto,time:halfTime,tasks:halfTasks};
+  const R={photo:0.5,time:0.42,tasks:0.58,timetasks:0.54},lw=Math.round(w*R[a]/(R[a]+R[b])),F={photo:halfPhoto,time:halfTime,tasks:halfTasks,timetasks:halfTimeTasks};
   F[a](ctx,0,0,lw,h);F[b](ctx,lw+1,0,w-lw-1,h);
   if(a!=='photo'&&b!=='photo'){ctx.fillStyle=INK;ctx.fillRect(lw,6,1,h-12);}else{ctx.fillStyle=INK;ctx.fillRect(lw,0,1,h);}
 }
@@ -730,7 +742,7 @@ function render(){
 function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);
   for(const el of document.querySelectorAll('[data-clk]'))el.hidden=el.dataset.clk!==$('clkStyle').value;
   for(const el of document.querySelectorAll('[data-tpl]'))el.hidden=el.dataset.tpl!==$('tplKind').value;
-  const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.includes(el.dataset.split);}
+  const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.some(p=>p.includes(el.dataset.split));}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();if(typeof scheduleThumbs==='function')scheduleThumbs();});}
 
 function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;schedule();}
@@ -742,7 +754,7 @@ const LAYOUTS=[
   ['Đồng hồ','clk','Đồng hồ','clkStyle','clock'],['Đồng hồ','clk','Đồng hồ 3D','clkStyle','clock3d'],['Đồng hồ','clk','Đồng hồ lật','clkStyle','flip'],['Đồng hồ','clk','Đồng hồ + ngày lớn','clkStyle','bigdate'],
   ['Đồng hồ','clk','Nhắc ngày lễ','clkStyle','holiday'],['Đồng hồ','clk','Đồng hồ, thứ, ngày','clkStyle','calclock'],['Đồng hồ','clk','Đồng hồ + lịch tháng','clkStyle','monthclock'],
   ['Lịch','clk','Lịch thông tin','clkStyle','info'],['Lịch','clk','Lịch tháng lớn','clkStyle','month'],['Lịch','clk','Lịch âm','clkStyle','lunar'],
-  ['Hai nửa','split','Ảnh │ Thời gian','splitMode','photo-time'],['Hai nửa','split','Thời gian │ Nhiệm vụ','splitMode','time-tasks'],['Hai nửa','split','Ảnh │ Nhiệm vụ','splitMode','photo-tasks'],['Hai nửa','photo','Ảnh toàn màn'],
+  ['Hai nửa','split','Ảnh │ Thời gian','splitMode','photo-time'],['Hai nửa','split','Thời gian │ Nhiệm vụ','splitMode','time-tasks'],['Hai nửa','split','Ảnh │ Nhiệm vụ','splitMode','photo-tasks'],['Hai nửa','split','Ảnh │ Giờ + Nhiệm vụ','splitMode','photo-timetasks'],['Hai nửa','photo','Ảnh toàn màn'],
   ['Cửa hàng & thông báo','tpl','Thẻ giá','tplKind','price'],['Cửa hàng & thông báo','tpl','Thông báo','tplKind','notice'],['Cửa hàng & thông báo','tpl','Số đỗ xe','tplKind','parking'],['Cửa hàng & thông báo','tpl','Đếm ngược','tplKind','countdown'],
 ].map(([group,t,name,field,value])=>({group,t,name,field,value,id:t+(value?':'+value:'')}));
 const GROUPS=[...new Set(LAYOUTS.map(l=>l.group))];
