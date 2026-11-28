@@ -267,6 +267,7 @@
         <p class="note">Các mẫu ở đây gửi lên dạng <b>ảnh tĩnh</b>: giờ đứng yên từ lúc gửi. Muốn giờ tự chạy, dùng nút <b>Đồng hồ tự chạy</b> / <b>Lịch tự chạy</b> bên khung xem trước.</p>
       </section>
 
+      <section class="panel" data-p="priv" hidden><select id="privId" hidden></select><div id="privPanel"></div></section>
       <section class="panel" data-p="studio" hidden><div id="stPanel"></div></section>
       <section class="panel" data-p="n" hidden>
         <select id="nId" hidden></select>
@@ -1123,7 +1124,7 @@ let artExport=false; // true khi xuất ảnh cho Đồng hồ tranh: không v�
 function render(){
   const size=$('optSize').value,g0=SIZES[size],g={w:g0.w,h:(tab==='art'||tab==='pic'||tab==='char')?128:g0.h},cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,char:drawChar,n:drawNT,studio:(c,w,h)=>window.Studio.draw(c,w,h),todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,char:drawChar,n:drawNT,studio:(c,w,h)=>window.Studio.draw(c,w,h),priv:(c,w,h)=>window.Private&&Private.draw(c,w,h),todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
   if(tab==='art'||tab==='pic'||tab==='char'){if(!artExport&&!(window.DTOverlay&&DTOverlay.fullArt()))artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
@@ -1485,6 +1486,7 @@ if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy m
 else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
 </script>
 <script src="shell.js"></script>
+<script src="private-pack.js"></script>
 <script src="overlay.js"></script>
 </body>
 </html>
