@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Diệu Thân · Bảng nhỏ</title>
 <style>
   :root{
@@ -156,6 +158,10 @@
   details.live > summary::-webkit-details-marker{display:none}
   details.live > summary::before{content:"▸ ";color:var(--muted)}
   details.live[open] > summary::before{content:"▾ "}
+  .card{position:relative}
+  .card .fav{position:absolute;top:6px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;font-size:17px;color:var(--red);box-shadow:0 1px 3px rgba(0,0,0,.12);cursor:pointer}
+  .n-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}.n-head b{font:700 18px/1.2 var(--display)}.n-coll{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--red);font-weight:700}
+  .n-form label output{color:var(--ink);font-weight:600}
   .f-label{font-size:13px;color:var(--muted);margin:4px 0 6px}
   .moods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
   .moods button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:22px;line-height:1.1;padding:8px 4px;min-height:58px}
@@ -172,6 +178,7 @@
     .cards{grid-template-columns:repeat(2,1fr);gap:8px}
   }
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
 <header class="topbar">
@@ -258,6 +265,14 @@
         <label><span>Ngày (mặc định hôm nay)</span><input id="clkDate" type="date"></label>
         <label><span>Dòng ghi chú góc dưới (không bắt buộc)</span><input id="clkNote" type="text" maxlength="20" placeholder="Ví dụ: Nhà Vy Viên"></label>
         <p class="note">Các mẫu ở đây gửi lên dạng <b>ảnh tĩnh</b>: giờ đứng yên từ lúc gửi. Muốn giờ tự chạy, dùng nút <b>Đồng hồ tự chạy</b> / <b>Lịch tự chạy</b> bên khung xem trước.</p>
+      </section>
+
+      <section class="panel" data-p="studio" hidden><div id="stPanel"></div></section>
+      <section class="panel" data-p="n" hidden>
+        <select id="nId" hidden></select>
+        <div id="nHead" class="n-head"></div>
+        <div id="nForm" class="n-form"></div>
+        <p class="note" id="nTimely" hidden>Mẫu này dùng ngày giờ lúc gửi. Muốn nó tự đổi theo thời gian, bật <b>Tự cập nhật</b> (ví dụ “Khi sang buổi mới” hoặc “Mỗi giờ”).</p>
       </section>
 
       <section class="panel" data-p="char" hidden>
@@ -438,6 +453,9 @@
   </div>
 </div>
 
+<script src="eink-kit.js"></script>
+<script src="collections.js"></script>
+<script src="studio.js"></script>
 <script>
 'use strict';
 /* ---------- Âm lịch (thuật toán Hồ Ngọc Đức, múi giờ +7) ---------- */
@@ -1102,7 +1120,7 @@ let artExport=false; // true khi xuất ảnh cho Đồng hồ tranh: không v�
 function render(){
   const size=$('optSize').value,g0=SIZES[size],g={w:g0.w,h:(tab==='art'||tab==='pic'||tab==='char')?128:g0.h},cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,char:drawChar,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,char:drawChar,n:drawNT,studio:(c,w,h)=>window.Studio.draw(c,w,h),todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
   if(tab==='art'||tab==='pic'||tab==='char'){if(!artExport)artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
@@ -1131,7 +1149,24 @@ function artTarget(){
 const TIME_TABS=['clk','split','kids','dash','todo','cal','photo'];
 function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;
   $('liveBox').hidden=!TIME_TABS.includes(t);$('toArtWrap').hidden=!artTarget();
+  if(t==='n'){ntBuilt='';buildNTForm();}
   const art=t==='art'||t==='pic'||t==='char';$('artGuide').hidden=!art;$('autoBox').hidden=art&&t!=='char';$('btnSend').hidden=art;schedule();}
+
+/* ---------- Mẫu thư viện mới (collections.js): form tự tạo theo trường của mẫu, lưu trên trình duyệt ---------- */
+const NT_BY={};for(const t of (window.NT_TEMPLATES||[]))NT_BY[t.id]=t;
+let NV={};try{NV=JSON.parse(localStorage.getItem('dt-nvals'))||{};}catch(_){}
+function ntVals(t){const v={};for(const f of t.fields||[])v[f.k]=f.def;return Object.assign(v,NV[t.id]||{});}
+function drawNT(ctx,w,h){const t=NT_BY[$('nId').value]||window.NT_TEMPLATES[0];if(!t)return;ctx.save();t.draw(ctx,w,h,ntVals(t));ctx.restore();ctx.textAlign='left';}
+let ntBuilt='';
+function buildNTForm(){const t=NT_BY[$('nId').value];if(!t||ntBuilt===t.id)return;ntBuilt=t.id;const v=ntVals(t);
+  $('nHead').innerHTML=`<span class="n-coll">${NT_COLLS[t.coll]}</span><b>${t.name}</b>`;$('nTimely').hidden=!t.timely;
+  $('nForm').innerHTML='';for(const f of t.fields||[]){const lab=document.createElement('label');lab.innerHTML=`<span>${f.label}</span>`;let el;
+    if(f.type==='textarea'){el=document.createElement('textarea');el.value=v[f.k]??'';}
+    else if(f.type==='select'){el=document.createElement('select');el.innerHTML=f.opts.map(([a,b])=>`<option value="${a}">${b}</option>`).join('');el.value=v[f.k];}
+    else if(f.type==='range'){el=document.createElement('input');el.type='range';el.min=f.min;el.max=f.max;el.step=f.step||1;el.value=v[f.k];const o=document.createElement('output');o.textContent=v[f.k]+(f.unit||'');lab.querySelector('span').append(' · ',o);el.addEventListener('input',()=>o.textContent=el.value+(f.unit||''));}
+    else{el=document.createElement('input');el.type=f.type==='number'?'number':f.type==='date'?'date':f.type==='time'?'time':'text';el.value=v[f.k]??'';if(f.type==='date'&&!el.value){const d=new Date();d.setDate(d.getDate()+7);el.value=d.toISOString().slice(0,10);}}
+    el.dataset.nk=f.k;el.addEventListener('input',()=>{NV[t.id]=NV[t.id]||{};NV[t.id][f.k]=el.value;try{localStorage.setItem('dt-nvals',JSON.stringify(NV));}catch(_){}schedule();});
+    lab.appendChild(el);$('nForm').appendChild(lab);}}
 
 /* ---------- Thư viện chọn màn hình ---------- */
 const LAYOUTS=[
@@ -1145,27 +1180,34 @@ const LAYOUTS=[
   ['Nhân vật','char','Chiều · làm việc','charScene','chieu'],['Nhân vật','char','Tối · đồ ngủ','charScene','toi'],
   ...PICS.map(([g,id,name])=>[g,'pic',name,'picId',id]),
   ['Giờ tự chạy','art','Nhiệm vụ + giờ','artKind','tasks'],['Giờ tự chạy','art','Lời nhắn + giờ','artKind','note'],['Giờ tự chạy','art','Ảnh + giờ','artKind','photo'],
+  ...(window.NT_TEMPLATES||[]).map(t=>[NT_COLLS[t.coll],'n',t.name,'nId',t.id]),
+  ...(window.Studio?[['Studio sáng tạo','studio','Thiết kế tự do']]:[]),
   ['Cửa hàng & thông báo','tpl','Thẻ giá','tplKind','price'],['Cửa hàng & thông báo','tpl','Thông báo','tplKind','notice'],['Cửa hàng & thông báo','tpl','Số đỗ xe','tplKind','parking'],['Cửa hàng & thông báo','tpl','Đếm ngược','tplKind','countdown'],
 ].map(([group,t,name,field,value])=>({group,t,name,field,value,id:t+(value?':'+value:'')}));
 const GROUPS=[...new Set(LAYOUTS.map(l=>l.group))];
 let curGroup=null;
 function currentLayout(){return LAYOUTS.find(l=>l.t===tab&&(!l.field||$(l.field).value===l.value))||LAYOUTS[0];}
-function chooseLayout(l){if(l.field)$(l.field).value=l.value;setTab(l.t);curGroup=l.group;drawGallery();
+function chooseLayout(l){if(l.field)$(l.field).value=l.value;setTab(l.t);curGroup=l.group;drawGallery();window.dispatchEvent(new CustomEvent('dt:choose',{detail:l}));
   if(innerWidth<820)document.querySelector('.grid').scrollIntoView({behavior:'smooth',block:'start'});}
 const thumbs={};
 function drawGallery(){
   const cur=currentLayout();curGroup=curGroup||cur.group;$('curName').textContent='· '+cur.name;
   $('cats').innerHTML='';for(const g of GROUPS){const b=document.createElement('button');b.setAttribute('role','tab');b.setAttribute('aria-selected',g===curGroup);
-    b.innerHTML=`${g}<span class="n">${LAYOUTS.filter(l=>l.group===g).length}</span>`;b.onclick=()=>{curGroup=g;drawGallery();};$('cats').appendChild(b);}
+    b.innerHTML=`${g}<span class="n">${LAYOUTS.filter(l=>l.group===g).length}</span>`;b.onclick=()=>{curGroup=g;drawGallery();if(LAYOUTS.some(l=>l.group===g&&!thumbs[l.id])){renderThumbs(LAYOUTS.filter(l=>l.group===g&&!thumbs[l.id]));drawGallery();}};$('cats').appendChild(b);}
   $('cards').innerHTML='';for(const l of LAYOUTS.filter(l=>l.group===curGroup)){const c=document.createElement('button');c.className='card'+(l===cur?' sel':'');
-    c.innerHTML=`<img alt="" src="${thumbs[l.id]||''}"><span class="nm"></span>`;c.querySelector('.nm').textContent=l.name;c.onclick=()=>chooseLayout(l);$('cards').appendChild(c);}
+    c.innerHTML=`<img alt="" src="${thumbs[l.id]||''}"><span class="nm"></span><span class="fav" role="button" aria-label="Yêu thích" data-fav="${l.id}">${(window.DT_isFav&&DT_isFav(l.id))?'♥':'♡'}</span>`;c.querySelector('.nm').textContent=l.name;c.onclick=e=>{if(e.target.dataset.fav){window.DT_toggleFav&&DT_toggleFav(l.id);e.stopPropagation();drawGallery();return;}chooseLayout(l);};$('cards').appendChild(c);}
   $('galCount').textContent=`${LAYOUTS.length} mẫu · bấm để chọn`;
 }
-function makeThumbs(){ // vẽ từng mẫu với nội dung hiện tại để làm ảnh thu nhỏ
+function renderThumbs(list){ // vẽ các mẫu trong danh sách với nội dung hiện tại
   const keepTab=tab,keep={};for(const l of LAYOUTS)if(l.field&&!(l.field in keep))keep[l.field]=$(l.field).value;
-  for(const l of LAYOUTS){tab=l.t;if(l.field)$(l.field).value=l.value;try{render();thumbs[l.id]=$('cv').toDataURL();}catch(_){}}
-  for(const k in keep)$(k).value=keep[k];tab=keepTab;render();drawGallery();
+  for(const l of list){tab=l.t;if(l.field)$(l.field).value=l.value;try{render();thumbs[l.id]=$('cv').toDataURL();}catch(_){}}
+  for(const k in keep)$(k).value=keep[k];tab=keepTab;render();
 }
+function makeThumbs(){ // nhóm đang xem + mẫu đang chọn + danh sách phụ (yêu thích, gần đây)
+  for(const k in thumbs)delete thumbs[k];const ids=new Set((window.DT_EXTRA_THUMBS||(()=>[]))());
+  renderThumbs(LAYOUTS.filter(l=>l.group===curGroup||l===currentLayout()||ids.has(l.id)));drawGallery();window.dispatchEvent(new Event('dt:thumbs'));
+}
+window.thumbOf=id=>{if(!thumbs[id]){const l=LAYOUTS.find(x=>x.id===id);if(l)renderThumbs([l]);}return thumbs[id]||'';};
 let thumbTimer=0;function scheduleThumbs(){clearTimeout(thumbTimer);thumbTimer=setTimeout(makeThumbs,700);}
 document.querySelectorAll('input,textarea,select').forEach(el=>{if(el.type!=='file')el.addEventListener('input',schedule);});
 $('tplPreset').addEventListener('change',()=>{const p=PRESETS[$('tplPreset').value];if(!p)return;[$('tplTitle').value,$('tplBody').value,$('tplContact').value]=p;schedule();});
@@ -1433,11 +1475,13 @@ $('btnToArt').onclick=()=>{const a=artTarget();if(!a)return;
 $('btnLiveClock').onclick=()=>liveMode(2);$('btnLiveCal').onclick=()=>liveMode(1);
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
 
+$('nId').innerHTML=(window.NT_TEMPLATES||[]).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 $('picId').innerHTML=PICS.map(([,id,name])=>`<option value="${id}">${name}</option>`).join('');
 for(const id of ['kidStyle','clkStyle','splitMode','tplKind','artKind','picId','charScene'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
 load();if(!['vui','thuong','haohung','met','buon','ngu'].includes($('charMood').value))$('charMood').value='vui';markMood();render();updateConn();makeThumbs();
 if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);
 else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
 </script>
+<script src="shell.js"></script>
 </body>
 </html>
