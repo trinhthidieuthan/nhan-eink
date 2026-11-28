@@ -108,27 +108,90 @@
   details{margin-top:18px;font-size:12px;color:var(--muted)}
   #log{white-space:pre-wrap;font:11px/1.5 ui-monospace,Menlo,monospace;max-height:160px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px}
   .note{font-size:12px;color:var(--muted);border-left:2px solid var(--red);padding-left:10px;margin-top:4px}
+
+  /* ===== Giao diện mới: gọn, đồng bộ, chuyên nghiệp ===== */
+  :root{--paper:#f4f3ef;--card:#ffffff;--line:#e5e2da;--line2:#d6d2c8;--ink:#1c1c1a;--muted:#6f6b63;--red:#c0392b;--red-soft:#fbeeec;--radius:14px;--shadow:0 1px 2px rgba(20,18,14,.05),0 4px 14px rgba(20,18,14,.05)}
+  body{background:var(--paper);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .tb-in{max-width:1120px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px}
+  .brand{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+  .logo{flex:0 0 40px;height:40px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center;font:700 15px/1 var(--sans);letter-spacing:.5px;position:relative}
+  .logo::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:var(--red);border:2px solid #fff}
+  .topbar h1{font:600 20px/1.15 var(--serif);margin:0;letter-spacing:-.01em;white-space:nowrap}
+  .topbar .sub{margin:2px 0 0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tb-link{font-size:13.5px;color:var(--ink);text-decoration:none;border:1px solid var(--line2);border-radius:999px;padding:7px 12px;white-space:nowrap;background:#fff}
+  .tb-link:hover{border-color:var(--ink)}
+  .conn{display:flex;align-items:center;gap:10px}
+  .status{font-size:12.5px;white-space:nowrap}
+  .wrap{max-width:1120px;padding:22px 20px 60px}
+  button{border-radius:10px;min-height:42px;padding:9px 16px;font-weight:500;border:1px solid var(--line2);background:#fff;transition:background .12s,border-color .12s}
+  button:hover{background:#f3f1ec;color:var(--ink);border-color:var(--ink)}
+  button.primary,#btnConnect{background:var(--ink);color:#fff;border-color:var(--ink)}
+  button.primary:hover,#btnConnect:hover{background:#000;color:#fff}
+  .gal-head h2{font:600 18px/1.2 var(--sans);display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+  .step{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font:700 13px/1 var(--sans);flex:0 0 26px}
+  .gal-head .cur{font-weight:500;font-size:14px}
+  .gallery{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 18px 20px;box-shadow:var(--shadow);margin-top:0}
+  .cats{gap:6px;margin-bottom:14px;flex-wrap:wrap;overflow:visible}
+  .cats button{border-radius:999px;min-height:34px;padding:5px 14px;font-size:13.5px;background:#f6f5f1;border-color:transparent;color:var(--muted)}
+  .cats button:hover{background:#ecebe6;color:var(--ink);border-color:transparent}
+  .cats button[aria-selected="true"]{background:var(--ink);color:#fff}
+  .cards{grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 8px 10px;box-shadow:none;transition:box-shadow .15s,border-color .15s,transform .15s}
+  .card:hover{background:#fff;border-color:var(--line2);box-shadow:var(--shadow);transform:translateY(-2px)}
+  .card img{border-radius:6px;border-color:#eceae4}
+  .card .nm{font-weight:500;padding:0 2px}
+  .card.sel{border:2px solid var(--red);padding:7px 7px 9px;box-shadow:0 0 0 4px var(--red-soft)}
+  .card.sel .nm::before{content:"✓ ";color:var(--red)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+  label{color:var(--muted);font-size:13px}
+  input[type=text],input[type=date],input[type=time],input[type=tel],textarea,select{border:1px solid var(--line2);border-radius:10px;padding:10px 12px;background:#fff;transition:border-color .12s,box-shadow .12s}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(28,28,26,.08)}
+  .preview{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+  .pv-head{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:16px}
+  .device{border-radius:16px;padding:14px 14px 20px;background:linear-gradient(180deg,#2e2d2b,#222120)}
+  .meta{margin:8px 2px 14px}
+  .live{background:#fbfaf7;border:1px solid var(--line);border-left:3px solid var(--red);border-radius:12px}
+  details.live > summary{cursor:pointer;list-style:none}
+  details.live > summary::-webkit-details-marker{display:none}
+  details.live > summary::before{content:"▸ ";color:var(--muted)}
+  details.live[open] > summary::before{content:"▾ "}
+  @media (max-width:820px){.tb-link{display:none}}
+  @media (max-width:520px){
+    .tb-in{padding:8px 12px;gap:10px}.logo{flex-basis:34px;height:34px;border-radius:9px;font-size:13px}
+    .topbar h1{font-size:17px}.topbar .sub{display:none}
+    .conn{flex-direction:column;align-items:flex-end;gap:2px}.conn .status{font-size:11px;order:2}
+    #btnConnect{min-height:36px;padding:6px 12px;font-size:13px}
+    .wrap{padding:14px 12px 40px}.gallery{padding:12px;border-radius:14px}.preview{padding:12px;border-radius:14px}
+    .cards{grid-template-columns:repeat(2,1fr);gap:8px}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Diệu Thân <span class="h1-sub"><em>·</em> Bảng nhỏ</span></h1>
-      <p class="sub">Màn e-ink 2.13" và 2.9" · gửi qua Bluetooth · <a href="dua-sao.html" style="color:var(--red)">🏁 Vy Viên yêu thương</a></p>
+<header class="topbar">
+  <div class="tb-in">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">DT</span>
+      <div>
+        <h1>Diệu Thân <span class="h1-sub"><em>·</em> Bảng nhỏ</span></h1>
+        <p class="sub">Thiết kế nhãn cho màn e-ink 2.13" / 2.9" · gửi qua Bluetooth</p>
+      </div>
     </div>
+    <a class="tb-link" href="dua-sao.html">🏁 Vy Viên yêu thương</a>
     <div class="conn">
       <span id="status" class="status">Chưa kết nối</span>
       <button id="btnConnect">Kết nối màn hình</button>
     </div>
-  </header>
+  </div>
+</header>
+<div class="wrap">
 
   <section class="gallery">
-    <div class="gal-head"><h2>1. Chọn màn hình</h2><span id="galCount" class="sub"></span></div>
+    <div class="gal-head"><h2><span class="step">1</span>Chọn màn hình</h2><span id="galCount" class="sub"></span></div>
     <div class="cats" id="cats" role="tablist"></div>
     <div class="cards" id="cards"></div>
   </section>
-  <div class="gal-head" style="margin-top:22px"><h2>2. Chỉnh nội dung <span id="curName" class="cur"></span></h2></div>
+  <div class="gal-head" style="margin-top:22px"><h2><span class="step">2</span>Chỉnh nội dung <span id="curName" class="cur"></span></h2></div>
 
   <div class="grid">
     <div>
@@ -189,6 +252,11 @@
         <label><span>Ngày (mặc định hôm nay)</span><input id="clkDate" type="date"></label>
         <label><span>Dòng ghi chú góc dưới (không bắt buộc)</span><input id="clkNote" type="text" maxlength="20" placeholder="Ví dụ: Nhà Vy Viên"></label>
         <p class="note">Các mẫu ở đây gửi lên dạng <b>ảnh tĩnh</b>: giờ đứng yên từ lúc gửi. Muốn giờ tự chạy, dùng nút <b>Đồng hồ tự chạy</b> / <b>Lịch tự chạy</b> bên khung xem trước.</p>
+      </section>
+
+      <section class="panel" data-p="pic" hidden>
+        <label><span>Tranh</span><select id="picId"></select></label>
+        <p class="note">Tranh nằm ở bên trái; <b>giờ và ngày ở bên phải do đồng hồ tự chạy mỗi phút</b>. Bấm <b>Gửi kèm đồng hồ tự chạy</b> bên khung xem trước. Phần màu đỏ trong tranh (trái tim…) giữ màu đỏ nếu bật “Dùng điểm nhấn đỏ”.</p>
       </section>
 
       <section class="panel" data-p="art" hidden>
@@ -277,6 +345,7 @@
     </div>
 
     <div class="preview">
+      <div class="pv-head"><span class="step">3</span><b>Xem trước &amp; gửi</b></div>
       <div class="device"><canvas id="cv" width="250" height="122"></canvas><div class="chin"></div></div>
       <div class="meta"><span id="metaSize">250 × 122 · đen / trắng / đỏ</span><span>Xem trước đúng điểm ảnh</span></div>
       <div class="actions">
@@ -373,7 +442,7 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','autoEvery','artKind','artPos','artBox','artTitle','artTasks','artMsg','artBy','artCaption','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','autoEvery','artKind','artPos','artBox','artTitle','artTasks','artMsg','artBy','artCaption','picId','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab,v2:true,v3:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
@@ -827,7 +896,7 @@ function tplCountdown(ctx,w,h){
 /* ---------- Giờ tự chạy (Đồng hồ tranh của đồng hồ) ----------
    Ảnh phủ toàn màn; đồng hồ tự vẽ giờ trong một ô ở góc và tự chạy mỗi phút. */
 function artBox(w,h){
-  const big=w===296,k=$('artBox').value,p=+$('artPos').value;
+  const big=w===296,k=tab==='pic'?'side':$('artBox').value,p=+$('artPos').value;
   if(k==='side')return {x:big?194:148,y:0,w:102,h}; // đồng hồ tự vẽ giờ, ngày ở cột phải
   if(k==='col')return {x:0,y:0,w:big?80:72,h};
   if(k==='big')return {x:w-(big?120:104),y:0,w:big?120:104,h:big?80:72};
@@ -837,9 +906,39 @@ function freeStrip(b,w,y0,y1,m=6){ // phần ngang còn trống của dải [y0,
   if(y1<=b.y||y0>=b.y+b.h)return {x:m,w:w-2*m};
   return b.x<=0?{x:b.x+b.w+m,w:w-(b.x+b.w)-2*m}:{x:m,w:b.x-2*m};
 }
+/* ---------- Tranh & tâm trạng: tranh nét bên trái, giờ do đồng hồ tự chạy bên phải ---------- */
+const PICS=[
+  ['Tranh theo chủ đề','meo-nhe-nhang','Một ngày nhẹ nhàng'],['Tranh theo chủ đề','chim-hit-tho','Hít thở… tiếp tục nhé'],['Tranh theo chủ đề','gau-gia-dinh','Gia đình là bình yên'],
+  ['Tranh theo chủ đề','bien-tha-long','Thả lỏng nạp năng lượng'],['Tranh theo chủ đề','ca-phe-viec','Tập trung · nghỉ ngơi'],['Tranh theo chủ đề','mua-binh-yen','Ngày mưa bình yên'],
+  ['Tranh theo chủ đề','phi-hanh-gia','Từng bước nhỏ'],['Tranh theo chủ đề','ngu-ngon','Ngủ ngon, nghỉ đủ'],['Tranh theo chủ đề','diem-tua','Gia đình là điểm tựa'],
+  ['Tranh theo chủ đề','ngay-binh-yen','Một ngày bình yên'],['Tranh theo chủ đề','co-gang','Cố gắng hôm nay'],['Tranh theo chủ đề','nap-nang-luong','Nạp lại năng lượng'],
+  ['Tranh theo chủ đề','loi-nhan','Mẹ yêu con'],['Tranh theo chủ đề','uong-nuoc','Uống nước nhé'],
+  ['Tâm trạng','em-vui','Hôm nay em vui'],['Tâm trạng','met-co-gang','Mệt nhưng vẫn cố'],['Tâm trạng','nghe-nhac','Cần nạp năng lượng'],['Tâm trạng','binh-yen','Hôm nay bình yên'],
+  ['Tâm trạng','hoi-buon','Hơi buồn, sẽ ổn thôi'],['Tâm trạng','ap-luc','Áp lực vẫn làm được'],['Tâm trạng','biet-on','Biết ơn hôm nay'],['Tâm trạng','yeu-ban-than','Yêu bản thân hơn'],
+];
+const picImgs={};
+function picImg(id){if(picImgs[id])return picImgs[id].complete&&picImgs[id].naturalWidth?picImgs[id]:null;
+  const im=new Image();im.onload=()=>{schedule();if(typeof scheduleThumbs==='function')scheduleThumbs();};im.src=`art/${id}.png`;picImgs[id]=im;return null;}
+function drawLineArt(ctx,img,x0,y0,w,h){ // vẽ tranh nét vừa khung, giữ màu đỏ, chuyển xám thành chấm
+  const tmp=document.createElement('canvas');tmp.width=w;tmp.height=h;const t=tmp.getContext('2d');t.fillStyle='#fff';t.fillRect(0,0,w,h);
+  const sc=Math.min(w/img.naturalWidth,h/img.naturalHeight),dw=img.naturalWidth*sc,dh=img.naturalHeight*sc;t.imageSmoothingQuality='high';t.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);
+  const im=t.getImageData(0,0,w,h),a=im.data,g=new Float32Array(w*h),red=new Uint8Array(w*h),useRed=$('optRed').checked;
+  for(let i=0;i<w*h;i++){const r=a[i*4],gg=a[i*4+1],b=a[i*4+2];if(useRed&&r>140&&r>gg*1.6&&r>b*1.6){red[i]=1;g[i]=255;continue;}
+    let y=r*.299+gg*.587+b*.114;g[i]=y>228?255:y<70?0:y;}
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(red[i])continue;const o=g[i],n=o<140?0:255,e=o-n;g[i]=n;
+    if(x+1<w)g[i+1]+=e*7/16;if(y+1<h){if(x>0)g[i+w-1]+=e*3/16;g[i+w]+=e*5/16;if(x+1<w)g[i+w+1]+=e/16;}}
+  for(let i=0;i<w*h;i++){if(red[i]){a[i*4]=255;a[i*4+1]=a[i*4+2]=0;}else{a[i*4]=a[i*4+1]=a[i*4+2]=g[i];}a[i*4+3]=255;}
+  ctx.putImageData(im,x0,y0);
+}
+function drawPic(ctx,w,h){
+  const b=artBox(w,h),img=picImg($('picId').value);
+  if(!img){ctx.fillStyle=INK;setFont(ctx,11,500,SERIF);ctx.textAlign='center';ctx.fillText('Đang tải tranh…',b.x/2,h/2);ctx.textAlign='left';return;}
+  drawLineArt(ctx,img,2,2,b.x-4,h-4);
+}
+
 function artPlaceholder(ctx,w,h){
   const b=artBox(w,h),d=new Date(),p=n=>String(n).padStart(2,'0');ctx.fillStyle=WHITE;ctx.fillRect(b.x,b.y,b.w,b.h);
-  if($('artBox').value==='side'){ // mô phỏng cột giờ do đồng hồ tự vẽ
+  if(tab==='pic'||$('artBox').value==='side'){ // mô phỏng cột giờ do đồng hồ tự vẽ
     ctx.fillStyle=INK;ctx.fillRect(b.x,0,1,h);ctx.textAlign='center';const cx=b.x+b.w/2;
     setFont(ctx,11,700);ctx.fillText(`${['CN','T2','T3','T4','T5','T6','T7'][d.getDay()]} ${p(d.getDate())}/${p(d.getMonth()+1)}`,cx,18);
     let s=34;setFont(ctx,s,800);while(ctx.measureText('88:88').width>b.w-8)setFont(ctx,--s,800);ctx.fillText(`${p(d.getHours())}:${p(d.getMinutes())}`,cx,h/2+s*0.35);
@@ -886,12 +985,12 @@ function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
 
 let artExport=false; // true khi xuất ảnh cho Đồng hồ tranh: không vẽ giờ minh họa
 function render(){
-  const size=$('optSize').value,g0=SIZES[size],g={w:g0.w,h:tab==='art'?128:g0.h},cv=$('cv');cv.width=g.w;cv.height=g.h;
+  const size=$('optSize').value,g0=SIZES[size],g={w:g0.w,h:(tab==='art'||tab==='pic')?128:g0.h},cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
-  if(tab==='art'){if(!artExport)artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
+  if(tab==='art'||tab==='pic'){if(!artExport)artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}${tab==='art'?' · ô nét đứt = giờ tự chạy':''}`;
 }
 function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);
@@ -899,7 +998,7 @@ function kidFields(){const s=$('kidStyle').value;for(const el of document.queryS
   for(const el of document.querySelectorAll('[data-tpl]'))el.hidden=el.dataset.tpl!==$('tplKind').value;
   for(const el of document.querySelectorAll('[data-art]'))el.hidden=!el.dataset.art.split(' ').includes($('artKind').value);
   $('artPos').disabled=$('artBox').value!=='small';
-  {const side=$('artBox').value==='side';$('artSideWrap').hidden=!side;$('artPngWrap').hidden=side;}
+  {const side=tab==='pic'||$('artBox').value==='side';$('artSideWrap').hidden=!side;$('artPngWrap').hidden=side;}
   if(typeof artTarget==='function')$('toArtWrap').hidden=!artTarget();
   const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.some(p=>p.includes(el.dataset.split));}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();if(typeof scheduleThumbs==='function')scheduleThumbs();});}
@@ -917,7 +1016,7 @@ function artTarget(){
 const TIME_TABS=['clk','split','kids','dash','todo','cal','photo'];
 function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;
   $('liveBox').hidden=!TIME_TABS.includes(t);$('toArtWrap').hidden=!artTarget();
-  const art=t==='art';$('artGuide').hidden=!art;$('autoBox').hidden=art;$('btnSend').hidden=art;schedule();}
+  const art=t==='art'||t==='pic';$('artGuide').hidden=!art;$('autoBox').hidden=art;$('btnSend').hidden=art;schedule();}
 
 /* ---------- Thư viện chọn màn hình ---------- */
 const LAYOUTS=[
@@ -927,6 +1026,7 @@ const LAYOUTS=[
   ['Đồng hồ','clk','Nhắc ngày lễ','clkStyle','holiday'],['Đồng hồ','clk','Đồng hồ, thứ, ngày','clkStyle','calclock'],['Đồng hồ','clk','Đồng hồ + lịch tháng','clkStyle','monthclock'],
   ['Lịch','clk','Lịch thông tin','clkStyle','info'],['Lịch','clk','Lịch tháng lớn','clkStyle','month'],['Lịch','clk','Lịch âm','clkStyle','lunar'],
   ['Hai nửa','split','Ảnh │ Thời gian','splitMode','photo-time'],['Hai nửa','split','Thời gian │ Nhiệm vụ','splitMode','time-tasks'],['Hai nửa','split','Ảnh │ Nhiệm vụ','splitMode','photo-tasks'],['Hai nửa','split','Ảnh │ Giờ + Nhiệm vụ','splitMode','photo-timetasks'],['Hai nửa','photo','Ảnh toàn màn'],
+  ...PICS.map(([g,id,name])=>[g,'pic',name,'picId',id]),
   ['Giờ tự chạy','art','Nhiệm vụ + giờ','artKind','tasks'],['Giờ tự chạy','art','Lời nhắn + giờ','artKind','note'],['Giờ tự chạy','art','Ảnh + giờ','artKind','photo'],
   ['Cửa hàng & thông báo','tpl','Thẻ giá','tplKind','price'],['Cửa hàng & thông báo','tpl','Thông báo','tplKind','notice'],['Cửa hàng & thông báo','tpl','Số đỗ xe','tplKind','parking'],['Cửa hàng & thông báo','tpl','Đếm ngược','tplKind','countdown'],
 ].map(([group,t,name,field,value])=>({group,t,name,field,value,id:t+(value?':'+value:'')}));
@@ -1213,7 +1313,8 @@ $('btnToArt').onclick=()=>{const a=artTarget();if(!a)return;
 $('btnLiveClock').onclick=()=>liveMode(2);$('btnLiveCal').onclick=()=>liveMode(1);
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
 
-for(const id of ['kidStyle','clkStyle','splitMode','tplKind','artKind'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
+$('picId').innerHTML=PICS.map(([,id,name])=>`<option value="${id}">${name}</option>`).join('');
+for(const id of ['kidStyle','clkStyle','splitMode','tplKind','artKind','picId'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
 load();render();updateConn();makeThumbs();
 if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);
 else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
