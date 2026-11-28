@@ -324,6 +324,16 @@
         <p class="small-note" id="autoStatus">Đang tắt.</p>
         <p class="small-note">Mỗi lần gửi, màn nhấp nháy khoảng 30 giây để làm mới — e-ink nào cũng vậy. Khuyên dùng 15 phút trở lên; mẫu chỉ có ngày thì chọn “Mỗi ngày”.</p>
       </div>
+      <details class="live" id="sleepBox">
+        <summary><b>🌙 Hẹn giờ tắt / mở màn hình</b> <span class="small-note" id="sleepSum"></span></summary>
+        <p>Đến giờ <b>tắt</b>, màn ngừng làm mới để tiết kiệm pin (e-ink vẫn giữ hình cuối cùng); đến giờ <b>mở</b>, màn hoạt động lại. Đồng hồ trong máy vẫn chạy đúng giờ. Lặp lại mỗi ngày.</p>
+        <div class="row">
+          <label><span>Tắt màn lúc</span><input id="sleepStart" type="time" value="22:00"></label>
+          <label><span>Mở màn lúc</span><input id="sleepEnd" type="time" value="06:30"></label>
+        </div>
+        <div class="actions"><button id="btnSleepOn" class="primary">Lưu và bật hẹn giờ</button><button id="btnSleepOff">Tắt hẹn giờ</button><button id="btnSleepRead">Xem lịch hiện tại</button></div>
+        <p class="small-note" id="sleepStatus">Kết nối màn hình để xem và đặt lịch.</p>
+      </details>
       <progress id="prog" value="0" max="100" hidden></progress>
       <div id="msg" class="msg"></div>
       <details class="more"><summary>Không thấy màn hình? · Nhật ký Bluetooth</summary>
@@ -947,6 +957,52 @@ $('photoFile').onchange=$('splitPhoto').onchange=$('artPhoto').onchange=e=>{cons
 function savePng(name){artExport=true;render();const a=document.createElement('a');a.download=name;a.href=$('cv').toDataURL('image/png');a.click();artExport=false;render();}
 $('btnPng').onclick=()=>savePng(`nhan-${tab}.png`);
 $('btnSendClock').onclick=()=>sendWithClock();
+
+/* ---------- Hẹn giờ tắt/mở màn (lịch ngủ có sẵn trong phần mềm đồng hồ, lệnh 0xFB) ----------
+   Đọc: FB FF. Đặt: FB <bật> <giờ tắt> <phút tắt> <giờ mở> <phút mở>. Đồng hồ trả lời FB <trạng thái> … như trên. */
+const p2=n=>String(n).padStart(2,'0');
+function showSleep(r){
+  const [on,sh,sm,eh,em]=r.values,range=`${p2(sh)}:${p2(sm)} → ${p2(eh)}:${p2(em)}`;
+  if(r.state===0){$('sleepStart').value=`${p2(sh)}:${p2(sm)}`;$('sleepEnd').value=`${p2(eh)}:${p2(em)}`;}
+  const msg=r.state===1?'Đồng hồ đang lưu lịch…':r.state===2?'Đồng hồ chưa lưu được lịch. Chờ vài giây rồi thử lại.':on?`Đang bật: tắt màn ${range}${r.active?' · màn đang ngủ':''}`:'Hẹn giờ đang tắt.';
+  $('sleepStatus').textContent=msg;$('sleepSum').textContent=r.state===0?(on?`· ${range}`:'· đang tắt'):'';
+}
+function sleepExchange(packet,ms=3000){
+  return new Promise(async(resolve,reject)=>{
+    if(!ble.ch||!ble.device?.gatt?.connected)return reject(new Error('Chưa kết nối màn hình.'));
+    const t=setTimeout(()=>{if(ble.sleepWaiter===done){ble.sleepWaiter=null;}resolve(null);},ms);
+    const done=r=>{clearTimeout(t);resolve(r);};ble.sleepWaiter=done;
+    try{await ble.ch.writeValueWithResponse(Uint8Array.from(packet));}catch(e){clearTimeout(t);ble.sleepWaiter=null;reject(e);}
+  });
+}
+async function sleepRead(quiet){
+  try{const r=await sleepExchange([0xfb,0xff]);
+    if(!r){ble.sleepSupported=false;$('sleepStatus').textContent='Phần mềm đồng hồ này chưa hỗ trợ hẹn giờ tắt/mở màn (cần bản mới hơn ở trang gốc).';return null;}
+    ble.sleepSupported=true;return r;}
+  catch(e){if(!quiet)$('sleepStatus').textContent=e.message;return null;}
+}
+async function sleepSet(enable){
+  if(ble.busy)return;
+  if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch)return;}
+  const parse=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(v||'');return m&&+m[1]<24&&+m[2]<60?[+m[1],+m[2]]:null;};
+  const s=parse($('sleepStart').value),e=parse($('sleepEnd').value);
+  if(!s||!e){$('sleepStatus').textContent='Nhập đủ giờ tắt và giờ mở.';return;}
+  if(enable&&s[0]===e[0]&&s[1]===e[1]){$('sleepStatus').textContent='Giờ tắt và giờ mở phải khác nhau.';return;}
+  if(enable){const over=e[0]*60+e[1]<s[0]*60+s[1];if(!confirm(`Tắt màn mỗi ngày từ ${p2(s[0])}:${p2(s[1])} đến ${p2(e[0])}:${p2(e[1])}${over?' (sáng hôm sau)':''}?`))return;}
+  ble.busy=true;updateConn();$('sleepStatus').textContent='Đang lưu lịch…';
+  try{
+    if(!ble.sleepSupported&&!await sleepRead(true))throw new Error('Phần mềm đồng hồ này chưa hỗ trợ hẹn giờ tắt/mở màn.');
+    const pk=[0xfb,enable?1:0,s[0],s[1],e[0],e[1]];
+    let r=await sleepExchange(pk,30000);const until=Date.now()+30000;
+    while(r&&r.state===1&&Date.now()<until){await sleep(400);r=await sleepExchange([0xfb,0xff],30000);}
+    if(!r||r.state!==0)throw new Error('Đồng hồ chưa lưu được lịch. Chờ vài giây rồi thử lại.');
+    if(!r.values.every((v,i)=>v===pk[i+1]))throw new Error('Đồng hồ chưa xác nhận đúng giờ đã đặt. Bấm “Xem lịch hiện tại” để kiểm tra.');
+    showSleep(r);log(`Lịch tắt/mở màn: ${enable?'bật':'tắt'} ${p2(s[0])}:${p2(s[1])} → ${p2(e[0])}:${p2(e[1])}`);
+  }catch(err){$('sleepStatus').textContent=err.message;log('Lỗi lịch ngủ: '+err.message);}
+  finally{ble.busy=false;updateConn();}
+}
+$('btnSleepOn').onclick=()=>sleepSet(true);$('btnSleepOff').onclick=()=>sleepSet(false);
+$('btnSleepRead').onclick=async()=>{if(!ble.device?.gatt?.connected){await connect();if(!ble.device?.gatt?.connected)return;}const r=await sleepRead();if(r)showSleep(r);};
 $('btnArtPng').onclick=()=>savePng(`dong-ho-tranh-${$('optSize').value==='290'?'296x128':'250x128'}.png`);
 document.fonts?.ready?.then(schedule);
 
@@ -975,6 +1031,9 @@ function onNotify(e){const v=e.target.value,data=new Uint8Array(v.buffer,v.byteO
   if(data.length>=3&&data[0]===0xEA&&data[1]===0x56&&data[2]===0x4E)return;
   const text=new TextDecoder().decode(data);
   if(/^t=\d+\s*$/.test(text)){if(ble.initWaiter){ble.initWaiter(true);ble.initWaiter=null;log('Màn 2.9" đã sẵn sàng nhận ảnh.');}return;}
+  // Trả lời lịch ngủ: FB, trạng thái (0 xong, 1 đang lưu, 2 lỗi), bật, giờ:phút tắt, giờ:phút mở, [đang ngủ]
+  if((data.length===7||data.length===8)&&data[0]===0xfb&&data[1]<=2&&data[2]<=1&&data[3]<24&&data[4]<60&&data[5]<24&&data[6]<60){
+    const res={state:data[1],values:Array.from(data.slice(2,7)),active:data.length===8?data[7]:null};if(ble.sleepWaiter){const w=ble.sleepWaiter;ble.sleepWaiter=null;w(res);}showSleep(res);return;}
   if(text.startsWith('mtu=')){const mtu=parseInt(text.slice(4),10);if(mtu>2)ble.chunk=Math.max(18,Math.min(244,mtu-2));log(`MTU ${mtu}, gói ${ble.chunk} byte`);return;}
   if(data.length>=8&&data.length<=64&&[1,2,3,4,5,7].includes(data[7])&&data[0]!==0xfb&&data[0]!==0x21&&data[0]!==0xa0){
     ble.model=data[7];ble.panel=data.length>13&&[0x21,0x29].includes(data[13])?data[13]:null;ble.dispMode=data.length>11?data[11]:null;
@@ -991,6 +1050,7 @@ async function setupDevice(dev){
   try{const vv=await (await svc.getCharacteristic(VER)).readValue();ble.version=vv.byteLength===4?vv.getUint32(0,true):vv.getUint8(0);log('Phiên bản firmware '+ble.version);}catch(_){log('Không đọc được phiên bản firmware.');}
   ble.ch.addEventListener('characteristicvaluechanged',onNotify);await ble.ch.startNotifications();
   await ble.ch.writeValueWithResponse(Uint8Array.of(CMD.INIT));updateConn();
+  setTimeout(()=>{if(!ble.busy)sleepRead(true);},1500); // đọc lịch tắt/mở màn hiện có
   for(let i=0;i<30&&ble.model==null;i++)await sleep(100);
   if(ble.model==null){ble.model=2;log('Không nhận được thông tin màn; giả định màn 2.13"/2.9". Hãy chọn đúng kích thước.');}
   updateConn();
