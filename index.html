@@ -156,6 +156,12 @@
   details.live > summary::-webkit-details-marker{display:none}
   details.live > summary::before{content:"▸ ";color:var(--muted)}
   details.live[open] > summary::before{content:"▾ "}
+  .f-label{font-size:13px;color:var(--muted);margin:4px 0 6px}
+  .moods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .moods button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:22px;line-height:1.1;padding:8px 4px;min-height:58px}
+  .moods button span{font-size:12.5px;color:var(--muted)}
+  .moods button.on{border:2px solid var(--red);background:var(--red-soft)}
+  .moods button.on span{color:var(--ink);font-weight:600}
   @media (max-width:820px){.tb-link{display:none}}
   @media (max-width:520px){
     .tb-in{padding:8px 12px;gap:10px}.logo{flex-basis:34px;height:34px;border-radius:9px;font-size:13px}
@@ -252,6 +258,26 @@
         <label><span>Ngày (mặc định hôm nay)</span><input id="clkDate" type="date"></label>
         <label><span>Dòng ghi chú góc dưới (không bắt buộc)</span><input id="clkNote" type="text" maxlength="20" placeholder="Ví dụ: Nhà Vy Viên"></label>
         <p class="note">Các mẫu ở đây gửi lên dạng <b>ảnh tĩnh</b>: giờ đứng yên từ lúc gửi. Muốn giờ tự chạy, dùng nút <b>Đồng hồ tự chạy</b> / <b>Lịch tự chạy</b> bên khung xem trước.</p>
+      </section>
+
+      <section class="panel" data-p="char" hidden>
+        <label><span>Cảnh</span><select id="charScene"><option value="auto">Tự theo giờ</option><option value="sang">Sáng · thức dậy</option><option value="trua">Trưa · ăn cơm</option><option value="chieu">Chiều · làm việc</option><option value="toi">Tối · đồ ngủ</option></select></label>
+        <div class="f-label">Tâm trạng hôm nay</div>
+        <div class="moods" id="moods">
+          <button data-mood="vui">😊<span>Vui</span></button><button data-mood="thuong">🙂<span>Bình thường</span></button><button data-mood="haohung">🤩<span>Hào hứng</span></button>
+          <button data-mood="met">😮‍💨<span>Mệt</span></button><button data-mood="buon">😢<span>Buồn</span></button><button data-mood="ngu">😴<span>Ngái ngủ</span></button>
+        </div>
+        <select id="charMood" hidden><option>vui</option><option>thuong</option><option>haohung</option><option>met</option><option>buon</option><option>ngu</option></select>
+        <div class="row">
+          <label><span>Tên nhân vật (không bắt buộc)</span><input id="charName" type="text" maxlength="14" placeholder="Ví dụ: Vy"></label>
+          <label><span>Câu nói riêng (để trống: tự theo cảnh)</span><input id="charCaption" type="text" maxlength="36"></label>
+        </div>
+        <div class="f-label">Giờ bắt đầu mỗi buổi</div>
+        <div class="row">
+          <label><span>🌅 Sáng</span><input id="charT1" type="time" value="05:30"></label><label><span>🍚 Trưa</span><input id="charT2" type="time" value="11:00"></label>
+          <label><span>💻 Chiều</span><input id="charT3" type="time" value="13:30"></label><label><span>🌙 Tối</span><input id="charT4" type="time" value="20:00"></label>
+        </div>
+        <p class="note">Bấm <b>Gửi kèm đồng hồ tự chạy</b> để gửi cảnh hiện tại (giờ ở cột phải tự chạy). Muốn nhân vật <b>tự đổi theo buổi</b>: để máy Boox mở trang này, ở ô <b>Tự cập nhật</b> chọn <b>“Khi sang buổi mới”</b> rồi bấm Bật — chỉ gửi 4 lần mỗi ngày, rất tiết kiệm pin.</p>
       </section>
 
       <section class="panel" data-p="pic" hidden>
@@ -386,7 +412,7 @@
         <p>Trang tự vẽ lại và gửi lên màn theo chu kỳ, để giờ và ngày trên mọi mẫu luôn đúng. Cần để trang này mở (ví dụ trên máy Boox đặt gần màn).</p>
         <div class="actions" style="align-items:center">
           <select id="autoEvery" style="width:auto;flex:1">
-            <option value="5">Mỗi 5 phút</option><option value="10">Mỗi 10 phút</option><option value="15" selected>Mỗi 15 phút</option><option value="30">Mỗi 30 phút</option><option value="60">Mỗi giờ</option><option value="day">Mỗi ngày (lúc 0 giờ)</option><option value="2">Mỗi 2 phút (hao pin màn)</option>
+            <option value="5">Mỗi 5 phút</option><option value="10">Mỗi 10 phút</option><option value="15" selected>Mỗi 15 phút</option><option value="30">Mỗi 30 phút</option><option value="60">Mỗi giờ</option><option value="day">Mỗi ngày (lúc 0 giờ)</option><option value="2">Mỗi 2 phút (hao pin màn)</option><option value="scene">Khi sang buổi mới (nhân vật)</option>
           </select>
           <button id="btnAuto">Bật tự cập nhật</button>
         </div>
@@ -442,7 +468,7 @@ const Lunar=(()=>{
 /* ---------- Trạng thái và lưu cục bộ ---------- */
 const $=id=>document.getElementById(id);
 const STORE='nhan-eink-v1';
-const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','autoEvery','artKind','artPos','artBox','artTitle','artTasks','artMsg','artBy','artCaption','picId','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
+const FIELDS=['dashName','dashIcon','dashStatus','m1Label','m1Pct','m2Label','m2Pct','dashLeft','dashUpper','dashTitle','dashItems','kidStyle','kid1Name','kid2Name','kid1Tasks','kid2Tasks','kidMission','kidReward','splitMode','splitSwap','splitTitle','splitTasks','clkStyle','clkNote','clkQuote','autoEvery','artKind','artPos','artBox','artTitle','artTasks','artMsg','artBy','artCaption','picId','charScene','charMood','charName','charCaption','charT1','charT2','charT3','charT4','tplKind','tplName','tplPrice','tplOld','tplUnit','tplSpec','tplTitle','tplBody','tplContact','tplPhone','tplParkMsg','tplCdDate','tplCdText','todoText','todoTitle','calNote','quoteText','quoteBy','quoteFont','photoFit','photoBright','photoContrast','photoCaption','optRed','optFrame','optSize'];
 let tab='dash',photo=null;
 const SIZES={213:{w:250,h:122},290:{w:296,h:128}};
 function save(){const o={tab,v2:true,v3:true};for(const k of FIELDS){const el=$(k);o[k]=el.type==='checkbox'?el.checked:el.value;}try{localStorage.setItem(STORE,JSON.stringify(o));}catch(_){}}
@@ -896,7 +922,7 @@ function tplCountdown(ctx,w,h){
 /* ---------- Giờ tự chạy (Đồng hồ tranh của đồng hồ) ----------
    Ảnh phủ toàn màn; đồng hồ tự vẽ giờ trong một ô ở góc và tự chạy mỗi phút. */
 function artBox(w,h){
-  const big=w===296,k=tab==='pic'?'side':$('artBox').value,p=+$('artPos').value;
+  const big=w===296,k=(tab==='pic'||tab==='char')?'side':$('artBox').value,p=+$('artPos').value;
   if(k==='side')return {x:big?194:148,y:0,w:102,h}; // đồng hồ tự vẽ giờ, ngày ở cột phải
   if(k==='col')return {x:0,y:0,w:big?80:72,h};
   if(k==='big')return {x:w-(big?120:104),y:0,w:big?120:104,h:big?80:72};
@@ -921,7 +947,7 @@ function picImg(id){if(picImgs[id])return picImgs[id].complete&&picImgs[id].natu
   const im=new Image();im.onload=()=>{schedule();if(typeof scheduleThumbs==='function')scheduleThumbs();};im.src=`art/${id}.png`;picImgs[id]=im;return null;}
 function drawLineArt(ctx,img,x0,y0,w,h){ // vẽ tranh nét vừa khung, giữ màu đỏ, chuyển xám thành chấm
   const tmp=document.createElement('canvas');tmp.width=w;tmp.height=h;const t=tmp.getContext('2d');t.fillStyle='#fff';t.fillRect(0,0,w,h);
-  const sc=Math.min(w/img.naturalWidth,h/img.naturalHeight),dw=img.naturalWidth*sc,dh=img.naturalHeight*sc;t.imageSmoothingQuality='high';t.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);
+  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,sc=Math.min(w/iw,h/ih),dw=iw*sc,dh=ih*sc;t.imageSmoothingQuality='high';t.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);
   const im=t.getImageData(0,0,w,h),a=im.data,g=new Float32Array(w*h),red=new Uint8Array(w*h),useRed=$('optRed').checked;
   for(let i=0;i<w*h;i++){const r=a[i*4],gg=a[i*4+1],b=a[i*4+2];if(useRed&&r>140&&r>gg*1.6&&r>b*1.6){red[i]=1;g[i]=255;continue;}
     let y=r*.299+gg*.587+b*.114;g[i]=y>228?255:y<70?0:y;}
@@ -936,9 +962,98 @@ function drawPic(ctx,w,h){
   drawLineArt(ctx,img,2,2,b.x-4,h-4);
 }
 
+/* ---------- Nhân vật có tính cách: cô bé, 4 cảnh theo buổi × 6 tâm trạng ----------
+   Vẽ bằng nét ở khung thiết kế cao 256, rồi thu nhỏ + chấm cho e-ink (giữ màu đỏ). */
+const SCENES=['sang','trua','chieu','toi'];
+const CAPS={
+  sang:{thuong:'Chào buổi sáng!',vui:'Ngày mới vui vẻ!',haohung:'Ngày mới tuyệt vời!',met:'Dậy thôi… 5 phút nữa',buon:'Sáng nay hơi buồn',ngu:'Buồn ngủ quá…'},
+  trua:{thuong:'Ăn trưa thôi!',vui:'Cơm ngon quá!',haohung:'Món yêu thích nè!',met:'Nạp năng lượng nào',buon:'Ăn chút cho vui nhé',ngu:'Ăn xong ngủ trưa'},
+  chieu:{thuong:'Chiều chăm chỉ',vui:'Làm việc vui ghê',haohung:'Tập trung cao độ!',met:'Mệt nhưng vẫn cố',buon:'Cố lên, sắp xong rồi',ngu:'Cần cốc nước nữa'},
+  toi:{thuong:'Ngủ ngon nhé ♡',vui:'Hôm nay thật vui',haohung:'Mơ đẹp nhé!',met:'Nghỉ ngơi thôi',buon:'Mai sẽ tốt hơn',ngu:'Zzz… ngủ ngon'},
+};
+const tmin=v=>{const m=/^(\d{1,2}):(\d{2})$/.exec(v||'');return m?+m[1]*60+ +m[2]:null;};
+function sceneTimes(){return ['charT1','charT2','charT3','charT4'].map((id,i)=>tmin($(id).value)??[330,660,810,1200][i]);}
+function sceneAt(d){const m=d.getHours()*60+d.getMinutes(),t=sceneTimes();let s=3;for(let i=0;i<4;i++)if(m>=t[i])s=i;return SCENES[s];} // trước giờ sáng = vẫn là tối
+function nextSceneAt(now){const t=sceneTimes(),m=now.getHours()*60+now.getMinutes();
+  for(const x of [...t].sort((a,b)=>a-b))if(x>m){const d=new Date(now);d.setHours(0,x,5,0);return d.getTime();}
+  const d=new Date(now);d.setDate(d.getDate()+1);d.setHours(0,Math.min(...t),5,0);return d.getTime();}
+function drawGirl(c,W,H,scene,mood){
+  const K='#000',Wt='#fff',R0='#ff0000',cx=W/2,R=50,hy=scene==='sang'?100:90,lw=5;
+  c.lineWidth=lw;c.lineCap='round';c.lineJoin='round';c.strokeStyle=K;
+  const ell=(x,y,rx,ry,f,s=true)=>{c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(f){c.fillStyle=f;c.fill();}if(s)c.stroke();};
+  const ln=(pts,w=lw)=>{c.lineWidth=w;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke();c.lineWidth=lw;};
+  const heart=(x,y,s,f=R0)=>{c.beginPath();c.moveTo(x,y+s*.9);c.bezierCurveTo(x-s*1.4,y,x-s*.7,y-s,x,y-s*.35);c.bezierCurveTo(x+s*.7,y-s,x+s*1.4,y,x,y+s*.9);c.fillStyle=f;c.fill();};
+  const star=(x,y,s)=>{c.fillStyle=K;c.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4,r=i%2?s*.35:s;c.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);}c.fill();};
+  // —— phông nền theo cảnh
+  if(scene==='sang'){const sx=W-34,sy=34;c.beginPath();c.arc(sx,sy,16,0,Math.PI*2);c.fillStyle=Wt;c.fill();c.stroke();
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;ln([[sx+Math.cos(a)*24,sy+Math.sin(a)*24],[sx+Math.cos(a)*33,sy+Math.sin(a)*33]],4);}}
+  if(scene==='toi'){c.beginPath();c.arc(W-36,36,18,0,Math.PI*2);c.fillStyle=K;c.fill();c.beginPath();c.arc(W-28,30,16,0,Math.PI*2);c.fillStyle=Wt;c.fill();
+    star(30,30,9);star(W-70,74,6);star(46,74,5);}
+  if(scene==='chieu'){ell(W-30,H-78,14,4,Wt);c.beginPath();c.rect(W-44,H-78,28,30);c.fillStyle=Wt;c.fill();c.stroke();c.beginPath();c.arc(W-14,H-64,8,-1.2,1.2);c.stroke();
+    ln([[W-34,H-92],[W-30,H-100],[W-34,H-108]],3);ln([[W-24,H-92],[W-20,H-100],[W-24,H-108]],3);}
+  // —— thân
+  const top=hy+R-8,dress=scene==='toi'?Wt:Wt;c.beginPath();c.moveTo(cx-34,top);c.quadraticCurveTo(cx-60,top+20,cx-62,H+10);c.lineTo(cx+62,H+10);c.quadraticCurveTo(cx+60,top+20,cx+34,top);c.closePath();c.fillStyle=dress;c.fill();c.stroke();
+  if(scene==='toi'){c.fillStyle=K;for(const [dx,dy] of [[-30,40],[22,52],[-8,74],[34,88],[-38,96],[8,110]])ell(cx+dx,top+dy,4,4,K,false);
+    ln([[cx-16,top+2],[cx,top+16],[cx+16,top+2]],4);}
+  else if(scene==='chieu'){ln([[cx-14,top+4],[cx-10,H]],4);ln([[cx+14,top+4],[cx+10,H]],4);}
+  else if(scene==='trua'){c.beginPath();c.rect(cx-30,top+40,60,80);c.stroke();ln([[cx-30,top+40],[cx-40,top+6]],4);ln([[cx+30,top+40],[cx+40,top+6]],4);}
+  else heart(cx,top+38,10);
+  // —— tay (sau đầu với cảnh sáng)
+  const armL=[cx-52,top+26],armR=[cx+52,top+26];
+  if(scene==='sang'){ln([armL,[cx-70,hy-28]],10);ln([armR,[cx+70,hy-28]],10);c.lineWidth=lw;ln([armL,[cx-70,hy-28]],2);ell(cx-71,hy-34,9,9,Wt);ell(cx+71,hy-34,9,9,Wt);}
+  // —— đầu: tóc sau, mặt, mái
+  ell(cx,hy+12,R+7,R+10,K,false);
+  if(scene!=='toi'){c.fillStyle=K;c.beginPath();c.moveTo(cx-R-10,hy+20);c.quadraticCurveTo(cx-R-18,hy+70,cx-R+4,hy+78);c.lineTo(cx-R+14,hy+30);c.fill();
+    c.beginPath();c.moveTo(cx+R+10,hy+20);c.quadraticCurveTo(cx+R+18,hy+70,cx+R-4,hy+78);c.lineTo(cx+R-14,hy+30);c.fill();}
+  ell(cx,hy+20,R-3,R-6,Wt);
+  c.fillStyle=K;c.beginPath();c.moveTo(cx-R+1,hy+10);c.bezierCurveTo(cx-R,hy-R+10,cx+R,hy-R+10,cx+R-1,hy+10);
+  for(let i=3;i>=0;i--){const x=cx-R+1+(i/4)*(2*R-2),xp=cx-R+1+((i+1)/4)*(2*R-2);c.quadraticCurveTo((x+xp)/2,hy-6,x,hy+(i%2?6:0));}
+  c.closePath();c.fill();
+  if(scene==='sang'){ln([[cx-4,hy-R+2],[cx-12,hy-R-16],[cx+2,hy-R-12]],4);} // tóc rối buổi sáng
+  if(scene==='toi'){c.beginPath();c.moveTo(cx-R-4,hy-14);c.quadraticCurveTo(cx-10,hy-R-40,cx+R+30,hy-R-8);c.quadraticCurveTo(cx+R,hy-20,cx+R+4,hy-12);c.closePath();c.fillStyle=R0;c.fill();c.stroke();
+    ell(cx+R+32,hy-R-8,9,9,Wt);c.beginPath();c.moveTo(cx-R-6,hy-12);c.quadraticCurveTo(cx,hy-26,cx+R+6,hy-10);c.lineWidth=8;c.stroke();c.lineWidth=lw;}
+  // —— khuôn mặt theo tâm trạng
+  const ey=hy+28,ex=18,my=hy+48;
+  const dot=(x,r=5.5)=>{ell(x,ey,r,r+1,K,false);ell(x+2,ey-2,1.6,1.6,Wt,false);};
+  if(mood==='vui'){for(const s of [-1,1]){c.beginPath();c.arc(cx+s*ex,ey+3,6,Math.PI*1.1,Math.PI*1.9);c.stroke();}c.beginPath();c.arc(cx,my-6,9,0.15*Math.PI,0.85*Math.PI);c.stroke();}
+  else if(mood==='thuong'){dot(cx-ex);dot(cx+ex);c.beginPath();c.arc(cx,my-5,5,0.2*Math.PI,0.8*Math.PI);c.stroke();}
+  else if(mood==='haohung'){for(const s of [-1,1]){ell(cx+s*ex,ey,7,8,K,false);ell(cx+s*ex+2.5,ey-3,2.4,2.4,Wt,false);ell(cx+s*ex-2,ey+3,1.3,1.3,Wt,false);}
+    c.beginPath();c.moveTo(cx-9,my-6);c.quadraticCurveTo(cx,my+8,cx+9,my-6);c.closePath();c.fillStyle=K;c.fill();ell(cx,my,3.5,2.5,R0,false);}
+  else if(mood==='met'){for(const s of [-1,1]){ln([[cx+s*ex-7,ey+1],[cx+s*ex+7,ey+1]],4);c.beginPath();c.arc(cx+s*ex,ey+6,6,0.15*Math.PI,0.85*Math.PI);c.lineWidth=2;c.stroke();c.lineWidth=lw;}
+    ln([[cx-7,my-2],[cx-3,my-5],[cx+1,my-2],[cx+5,my-5],[cx+8,my-3]],3.5);c.beginPath();c.moveTo(cx+R-8,hy-6);c.quadraticCurveTo(cx+R-14,hy+6,cx+R-8,hy+8);c.quadraticCurveTo(cx+R-2,hy+6,cx+R-8,hy-6);c.fillStyle=Wt;c.fill();c.lineWidth=3;c.stroke();c.lineWidth=lw;}
+  else if(mood==='buon'){dot(cx-ex,4.5);dot(cx+ex,4.5);ln([[cx-ex-8,ey-12],[cx-ex+5,ey-9]],3.5);ln([[cx+ex+8,ey-12],[cx+ex-5,ey-9]],3.5);
+    c.beginPath();c.arc(cx,my+4,7,1.15*Math.PI,1.85*Math.PI);c.stroke();c.beginPath();c.moveTo(cx-ex-2,ey+8);c.quadraticCurveTo(cx-ex-8,ey+20,cx-ex-2,ey+22);c.quadraticCurveTo(cx-ex+4,ey+20,cx-ex-2,ey+8);c.fillStyle=Wt;c.fill();c.lineWidth=3;c.stroke();c.lineWidth=lw;}
+  else if(mood==='ngu'){for(const s of [-1,1]){c.beginPath();c.arc(cx+s*ex,ey-2,6,0.15*Math.PI,0.85*Math.PI);c.stroke();}ell(cx,my-2,3.5,4.5,Wt);
+    c.fillStyle=K;c.font='700 20px sans-serif';c.fillText('z',cx+R+4,hy-18);c.font='700 14px sans-serif';c.fillText('z',cx+R+18,hy-32);}
+  if(mood!=='buon'){ell(cx-ex-9,ey+14,7,4,R0,false);ell(cx+ex+9,ey+14,7,4,R0,false);}
+  if(mood==='haohung'||mood==='vui'){heart(cx-R-22,hy-6,8);heart(cx+R+22,hy+24,6);}
+  // —— đạo cụ phía trước
+  if(scene==='sang'){c.beginPath();c.moveTo(-6,H-58);for(let x=0;x<=W+20;x+=40)c.quadraticCurveTo(x+20,H-74,x+40,H-58);c.lineTo(W+10,H+10);c.lineTo(-10,H+10);c.closePath();c.fillStyle=Wt;c.fill();c.stroke();
+    for(let x=24;x<W;x+=44)ln([[x,H-40],[x+16,H-34]],3);}
+  if(scene==='trua'){ln([[-10,H-30],[W+10,H-30]],5);c.beginPath();c.moveTo(cx-44,H-74);c.quadraticCurveTo(cx,H-10,cx+44,H-74);c.closePath();c.fillStyle=Wt;c.fill();c.stroke();
+    c.beginPath();for(let i=0;i<6;i++){const x=cx-36+i*14.5;c.moveTo(x-7,H-74);c.arc(x,H-74,7.5,Math.PI,0);}c.fillStyle=Wt;c.fill();c.stroke();ln([[cx-44,H-74],[cx+44,H-74]],5);
+    heart(cx,H-52,7);ln([[cx+18,top+44],[cx+70,H-98]],4);ln([[cx+26,top+46],[cx+76,H-92]],4);ell(cx+44,top+48,9,9,Wt);
+    for(const dx of [-58,-44])ln([[cx+dx,H-92],[cx+dx+5,H-104],[cx+dx,H-116]],3);}
+  if(scene==='chieu'){ln([[-10,H-30],[W+10,H-30]],5);c.beginPath();c.moveTo(cx-52,H-30);c.lineTo(cx-44,H-96);c.lineTo(cx+44,H-96);c.lineTo(cx+52,H-30);c.closePath();c.fillStyle=Wt;c.fill();c.stroke();
+    heart(cx,H-66,10);ell(cx-54,H-36,9,7,Wt);ell(cx+54,H-36,9,7,Wt);}
+  if(scene==='toi'){c.beginPath();c.roundRect(cx-46,top+40,92,64,18);c.fillStyle=Wt;c.fill();c.stroke();heart(cx,top+72,12);ell(cx-50,top+60,10,10,Wt);ell(cx+50,top+60,10,10,Wt);}
+}
+function drawChar(ctx,w,h){
+  const b=artBox(w,h),rw=b.x,tw=Math.round(rw*0.43),aw=rw-tw-2,now=new Date();
+  const scene=$('charScene').value==='auto'?sceneAt(now):$('charScene').value,mood=$('charMood').value||'thuong';
+  const off=document.createElement('canvas');off.width=Math.round(aw*2);off.height=256;const c=off.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,off.width,off.height);
+  drawGirl(c,off.width,off.height,scene,mood);drawLineArt(ctx,off,tw,0,aw,h);
+  // cột chữ: tên (đỏ) + câu nói
+  const name=$('charName').value.trim(),cap=$('charCaption').value.trim()||CAPS[scene][mood];
+  let y=14;if(name){setFont(ctx,11,800);ctx.fillStyle=accent();ctx.fillText(ellipsize(ctx,name.toLocaleUpperCase('vi'),tw-6),4,y+2);y+=10;}
+  const f=fit(ctx,cap,tw-6,h-y-24,{max:14,min:10,weight:700,fam:SERIF,lh:1.18,maxLines:5});ctx.fillStyle=INK;
+  const y0=y+Math.max(4,(h-y-20-f.lines.length*f.lh)/2);f.lines.forEach((l,i)=>ctx.fillText(l,4,Math.round(y0+(i+1)*f.lh-f.lh*0.2)));
+  const icon={sang:'Sáng',trua:'Trưa',chieu:'Chiều',toi:'Tối'}[scene];setFont(ctx,9,700);ctx.fillStyle=INK;ctx.fillText(icon.toLocaleUpperCase('vi'),4,h-6);
+}
+
 function artPlaceholder(ctx,w,h){
   const b=artBox(w,h),d=new Date(),p=n=>String(n).padStart(2,'0');ctx.fillStyle=WHITE;ctx.fillRect(b.x,b.y,b.w,b.h);
-  if(tab==='pic'||$('artBox').value==='side'){ // mô phỏng cột giờ do đồng hồ tự vẽ
+  if(tab==='pic'||tab==='char'||$('artBox').value==='side'){ // mô phỏng cột giờ do đồng hồ tự vẽ
     ctx.fillStyle=INK;ctx.fillRect(b.x,0,1,h);ctx.textAlign='center';const cx=b.x+b.w/2;
     setFont(ctx,11,700);ctx.fillText(`${['CN','T2','T3','T4','T5','T6','T7'][d.getDay()]} ${p(d.getDate())}/${p(d.getMonth()+1)}`,cx,18);
     let s=34;setFont(ctx,s,800);while(ctx.measureText('88:88').width>b.w-8)setFont(ctx,--s,800);ctx.fillText(`${p(d.getHours())}:${p(d.getMinutes())}`,cx,h/2+s*0.35);
@@ -985,12 +1100,12 @@ function quantize(ctx,w,h){const im=ctx.getImageData(0,0,w,h),a=im.data;
 
 let artExport=false; // true khi xuất ảnh cho Đồng hồ tranh: không vẽ giờ minh họa
 function render(){
-  const size=$('optSize').value,g0=SIZES[size],g={w:g0.w,h:(tab==='art'||tab==='pic')?128:g0.h},cv=$('cv');cv.width=g.w;cv.height=g.h;
+  const size=$('optSize').value,g0=SIZES[size],g={w:g0.w,h:(tab==='art'||tab==='pic'||tab==='char')?128:g0.h},cv=$('cv');cv.width=g.w;cv.height=g.h;
   const ctx=cv.getContext('2d');ctx.fillStyle=WHITE;ctx.fillRect(0,0,g.w,g.h);ctx.textBaseline='alphabetic';
-  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
+  ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,char:drawChar,todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
-  if(tab==='art'||tab==='pic'){if(!artExport)artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
+  if(tab==='art'||tab==='pic'||tab==='char'){if(!artExport)artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}${tab==='art'?' · ô nét đứt = giờ tự chạy':''}`;
 }
 function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);
@@ -998,7 +1113,7 @@ function kidFields(){const s=$('kidStyle').value;for(const el of document.queryS
   for(const el of document.querySelectorAll('[data-tpl]'))el.hidden=el.dataset.tpl!==$('tplKind').value;
   for(const el of document.querySelectorAll('[data-art]'))el.hidden=!el.dataset.art.split(' ').includes($('artKind').value);
   $('artPos').disabled=$('artBox').value!=='small';
-  {const side=tab==='pic'||$('artBox').value==='side';$('artSideWrap').hidden=!side;$('artPngWrap').hidden=side;}
+  {const side=tab==='pic'||tab==='char'||$('artBox').value==='side';$('artSideWrap').hidden=!side;$('artPngWrap').hidden=side;}
   if(typeof artTarget==='function')$('toArtWrap').hidden=!artTarget();
   const parts=$('splitMode').value.split('-');for(const el of document.querySelectorAll('[data-split]'))el.hidden=!parts.some(p=>p.includes(el.dataset.split));}
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;kidFields();render();save();if(typeof scheduleThumbs==='function')scheduleThumbs();});}
@@ -1016,7 +1131,7 @@ function artTarget(){
 const TIME_TABS=['clk','split','kids','dash','todo','cal','photo'];
 function setTab(t){tab=t;for(const p of document.querySelectorAll('[data-p]'))p.hidden=p.dataset.p!==t;
   $('liveBox').hidden=!TIME_TABS.includes(t);$('toArtWrap').hidden=!artTarget();
-  const art=t==='art'||t==='pic';$('artGuide').hidden=!art;$('autoBox').hidden=art;$('btnSend').hidden=art;schedule();}
+  const art=t==='art'||t==='pic'||t==='char';$('artGuide').hidden=!art;$('autoBox').hidden=art&&t!=='char';$('btnSend').hidden=art;schedule();}
 
 /* ---------- Thư viện chọn màn hình ---------- */
 const LAYOUTS=[
@@ -1026,6 +1141,8 @@ const LAYOUTS=[
   ['Đồng hồ','clk','Nhắc ngày lễ','clkStyle','holiday'],['Đồng hồ','clk','Đồng hồ, thứ, ngày','clkStyle','calclock'],['Đồng hồ','clk','Đồng hồ + lịch tháng','clkStyle','monthclock'],
   ['Lịch','clk','Lịch thông tin','clkStyle','info'],['Lịch','clk','Lịch tháng lớn','clkStyle','month'],['Lịch','clk','Lịch âm','clkStyle','lunar'],
   ['Hai nửa','split','Ảnh │ Thời gian','splitMode','photo-time'],['Hai nửa','split','Thời gian │ Nhiệm vụ','splitMode','time-tasks'],['Hai nửa','split','Ảnh │ Nhiệm vụ','splitMode','photo-tasks'],['Hai nửa','split','Ảnh │ Giờ + Nhiệm vụ','splitMode','photo-timetasks'],['Hai nửa','photo','Ảnh toàn màn'],
+  ['Nhân vật','char','Cô bé · tự theo giờ','charScene','auto'],['Nhân vật','char','Sáng · thức dậy','charScene','sang'],['Nhân vật','char','Trưa · ăn cơm','charScene','trua'],
+  ['Nhân vật','char','Chiều · làm việc','charScene','chieu'],['Nhân vật','char','Tối · đồ ngủ','charScene','toi'],
   ...PICS.map(([g,id,name])=>[g,'pic',name,'picId',id]),
   ['Giờ tự chạy','art','Nhiệm vụ + giờ','artKind','tasks'],['Giờ tự chạy','art','Lời nhắn + giờ','artKind','note'],['Giờ tự chạy','art','Ảnh + giờ','artKind','photo'],
   ['Cửa hàng & thông báo','tpl','Thẻ giá','tplKind','price'],['Cửa hàng & thông báo','tpl','Thông báo','tplKind','notice'],['Cửa hàng & thông báo','tpl','Số đỗ xe','tplKind','parking'],['Cửa hàng & thông báo','tpl','Đếm ngược','tplKind','countdown'],
@@ -1057,6 +1174,8 @@ $('photoFile').onchange=$('splitPhoto').onchange=$('artPhoto').onchange=e=>{cons
 function savePng(name){artExport=true;render();const a=document.createElement('a');a.download=name;a.href=$('cv').toDataURL('image/png');a.click();artExport=false;render();}
 $('btnPng').onclick=()=>savePng(`nhan-${tab}.png`);
 $('btnSendClock').onclick=()=>sendWithClock();
+function markMood(){for(const b of document.querySelectorAll('#moods button'))b.classList.toggle('on',b.dataset.mood===$('charMood').value);}
+document.querySelectorAll('#moods button').forEach(b=>b.onclick=()=>{$('charMood').value=b.dataset.mood;markMood();schedule();});
 
 /* ---------- Hẹn giờ tắt/mở màn (lịch ngủ có sẵn trong phần mềm đồng hồ, lệnh 0xFB) ----------
    Đọc: FB FF. Đặt: FB <bật> <giờ tắt> <phút tắt> <giờ mở> <phút mở>. Đồng hồ trả lời FB <trạng thái> … như trên. */
@@ -1263,6 +1382,7 @@ async function sendWithClock(){
 /* ---------- Tự cập nhật: vẽ lại và gửi lại theo chu kỳ để ngày giờ luôn đúng ---------- */
 const auto={on:false,timer:0,next:0,lock:null,fails:0};
 function nextAt(){const v=$('autoEvery').value,now=new Date();
+  if(v==='scene')return nextSceneAt(now);
   if(v==='day'){const t=new Date(now);t.setHours(24,0,5,0);return t.getTime();}
   const m=+v,mins=now.getHours()*60+now.getMinutes(),nm=(Math.floor(mins/m)+1)*m,t=new Date(now);t.setHours(0,nm,2,0);return t.getTime();}
 function autoStatus(){const el=$('autoStatus');if(!auto.on){el.textContent='Đang tắt.';return;}
@@ -1276,7 +1396,7 @@ async function autoTick(){
   if(ble.busy){auto.timer=setTimeout(autoTick,15000);return;}
   if(!await ensureConnected()){auto.fails++;say(`Tự cập nhật: chưa nối lại được màn (lần ${auto.fails}). Sẽ thử lại sau.`,true);
     if(auto.fails>=5){autoStop();say('Tự cập nhật đã dừng vì mất kết nối nhiều lần. Bấm Bật lại khi màn ở gần.',true);return;}auto.timer=setTimeout(autoTick,60000);return;}
-  render();const ok=await send();auto.fails=ok?0:auto.fails+1;
+  render();const ok=(tab==='char'||tab==='pic'||(tab==='art'&&$('artBox').value==='side'))?await sendWithClock():await send();auto.fails=ok?0:auto.fails+1;
   if(ok){const d=new Date();log(`Tự cập nhật lúc ${d.toLocaleTimeString()}`);}
   autoSchedule();
 }
@@ -1314,8 +1434,8 @@ $('btnLiveClock').onclick=()=>liveMode(2);$('btnLiveCal').onclick=()=>liveMode(1
 $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối lại rồi gửi lại.'));try{ble.device?.gatt?.disconnect();}catch(_){}};
 
 $('picId').innerHTML=PICS.map(([,id,name])=>`<option value="${id}">${name}</option>`).join('');
-for(const id of ['kidStyle','clkStyle','splitMode','tplKind','artKind','picId'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
-load();render();updateConn();makeThumbs();
+for(const id of ['kidStyle','clkStyle','splitMode','tplKind','artKind','picId','charScene'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
+load();if(!['vui','thuong','haohung','met','buon','ngu'].includes($('charMood').value))$('charMood').value='vui';markMood();render();updateConn();makeThumbs();
 if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);
 else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
 </script>
