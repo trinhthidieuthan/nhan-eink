@@ -958,9 +958,11 @@ const PICS=[
   ['Tranh theo chủ đề','phi-hanh-gia','Từng bước nhỏ'],['Tranh theo chủ đề','ngu-ngon','Ngủ ngon, nghỉ đủ'],['Tranh theo chủ đề','diem-tua','Gia đình là điểm tựa'],
   ['Tranh theo chủ đề','ngay-binh-yen','Một ngày bình yên'],['Tranh theo chủ đề','co-gang','Cố gắng hôm nay'],['Tranh theo chủ đề','nap-nang-luong','Nạp lại năng lượng'],
   ['Tranh theo chủ đề','loi-nhan','Mẹ yêu con'],['Tranh theo chủ đề','uong-nuoc','Uống nước nhé'],
+  ['Tranh theo chủ đề','picnic-ban-nho','Picnic bạn nhỏ','full'],['Tranh theo chủ đề','chan-am-doc-sach','Chăn ấm, sách hay','full'],
   ['Tâm trạng','em-vui','Hôm nay em vui'],['Tâm trạng','met-co-gang','Mệt nhưng vẫn cố'],['Tâm trạng','nghe-nhac','Cần nạp năng lượng'],['Tâm trạng','binh-yen','Hôm nay bình yên'],
   ['Tâm trạng','hoi-buon','Hơi buồn, sẽ ổn thôi'],['Tâm trạng','ap-luc','Áp lực vẫn làm được'],['Tâm trạng','biet-on','Biết ơn hôm nay'],['Tâm trạng','yeu-ban-than','Yêu bản thân hơn'],
 ];
+window.PIC_FULL=new Set(PICS.filter(p=>p[3]==='full').map(p=>'pic:'+p[1])); // tranh ngang toàn màn: mặc định bật lớp ngày giờ động
 const picImgs={};
 function picImg(id){if(picImgs[id])return picImgs[id].complete&&picImgs[id].naturalWidth?picImgs[id]:null;
   const im=new Image();im.onload=()=>{schedule();if(typeof scheduleThumbs==='function')scheduleThumbs();};im.src=`art/${id}.png`;picImgs[id]=im;return null;}

@@ -14,7 +14,7 @@ const BG={box:'Ô trắng có viền',plain:'Ô trắng không viền',clear:'Ch
 const DEF={on:false,pos:'br',x:4,y:4,fmt:'hm',size:16,weight:800,color:'k',bg:'box',margin:3,engine:'web'};
 let store=LS.get('dt-overlay',{def:null,per:{}});if(!store.per)store.per={};
 const lid=()=>{try{return currentLayout().id;}catch(_){return 'x';}};
-const cfg=(id=lid())=>Object.assign({},DEF,store.def||{},store.per[id]||{});
+const cfg=(id=lid())=>Object.assign({},DEF,store.def||{},window.PIC_FULL&&PIC_FULL.has(id)?{on:true,pos:'br',fmt:'wdm_hm',size:13,engine:'web'}:{},store.per[id]||{});
 const setCfg=(o,id=lid())=>{store.per[id]=Object.assign(cfg(id),o);LS.set('dt-overlay',store);};
 const active=(id)=>{const c=cfg(id);return c.on&&c.engine==='web';};
 
