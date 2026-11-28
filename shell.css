@@ -112,3 +112,11 @@ button.primary,#btnConnect{background:var(--ink);border-color:var(--ink)}
 .st-acts{display:flex;gap:4px;padding:6px}.st-acts button{flex:1;min-height:30px;font-size:12px;padding:2px 4px}
 .grid>div{min-width:0}.st-props label,.st-props select,.st-props input,.st-props textarea{max-width:100%}
 .st-pos input{width:100%;min-width:0;box-sizing:border-box}
+
+/* —— Lớp ngày giờ động —— */
+.dto-layer{position:absolute;pointer-events:none;image-rendering:pixelated;background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;margin:0!important;padding:0!important}
+details.dto summary{font-weight:700}
+.dto .dto-note{font-size:12.5px;line-height:1.5;color:var(--muted);background:#faf8f3;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.dto .dto-note b{color:var(--ink)}
+.dto .check .hint-inline{display:block;margin-left:24px;font-size:12px}
+.dto label.check{flex-wrap:wrap}

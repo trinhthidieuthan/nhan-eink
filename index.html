@@ -940,6 +940,7 @@ function tplCountdown(ctx,w,h){
 /* ---------- Giờ tự chạy (Đồng hồ tranh của đồng hồ) ----------
    Ảnh phủ toàn màn; đồng hồ tự vẽ giờ trong một ô ở góc và tự chạy mỗi phút. */
 function artBox(w,h){
+  if(window.DTOverlay&&DTOverlay.fullArt())return {x:w,y:0,w:0,h:0}; // có lớp ngày giờ động: tranh phủ toàn màn
   const big=w===296,k=(tab==='pic'||tab==='char')?'side':$('artBox').value,p=+$('artPos').value;
   if(k==='side')return {x:big?194:148,y:0,w:102,h}; // đồng hồ tự vẽ giờ, ngày ở cột phải
   if(k==='col')return {x:0,y:0,w:big?80:72,h};
@@ -1123,7 +1124,7 @@ function render(){
   ({dash:drawDash,kids:drawKids,split:drawSplit,tpl:drawTpl,clk:drawClk,art:drawArt,pic:drawPic,char:drawChar,n:drawNT,studio:(c,w,h)=>window.Studio.draw(c,w,h),todo:drawTodo,cal:drawCal,quote:drawQuote,photo:drawPhoto})[tab](ctx,g.w,g.h);
   if($('optFrame').checked){ctx.strokeStyle=INK;ctx.lineWidth=1;ctx.strokeRect(2.5,2.5,g.w-5,g.h-5);}
   quantize(ctx,g.w,g.h);
-  if(tab==='art'||tab==='pic'||tab==='char'){if(!artExport)artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
+  if(tab==='art'||tab==='pic'||tab==='char'){if(!artExport&&!(window.DTOverlay&&DTOverlay.fullArt()))artPlaceholder(ctx,g.w,g.h);$('artSizeTxt').textContent=`${g.w} × 128`;}
   $('metaSize').textContent=`${g.w} × ${g.h} · ${$('optRed').checked?'đen / trắng / đỏ':'đen / trắng'}${tab==='art'?' · ô nét đứt = giờ tự chạy':''}`;
 }
 function kidFields(){const s=$('kidStyle').value;for(const el of document.querySelectorAll('[data-kid]'))el.hidden=!el.dataset.kid.split(' ').includes(s);
@@ -1343,7 +1344,7 @@ async function send(){
   if(!ble.device?.gatt?.connected||!ble.ch){await connect();if(!ble.device?.gatt?.connected||!ble.ch||ble.model!==2)return false;}
   let ok=false;
   const size=$('optSize').value,g=SIZES[size];
-  render();const cv=document.createElement('canvas');cv.width=g.w;cv.height=128;const c=cv.getContext('2d');c.fillStyle=WHITE;c.fillRect(0,0,g.w,128);c.drawImage($('cv'),0,0);
+  render();const cv=document.createElement('canvas');cv.width=g.w;cv.height=128;const c=cv.getContext('2d');c.fillStyle=WHITE;c.fillRect(0,0,g.w,128);c.drawImage($('cv'),0,0);window.DTOverlay&&DTOverlay.bake(c,g.w,$('cv').height); // lớp ngày giờ động (chỉ khi chọn “trang web làm mới”)
   if(!$('optRed').checked){const im=c.getImageData(0,0,g.w,128);for(let i=0;i<im.data.length;i+=4)if(im.data[i+1]===0&&im.data[i]===255){im.data[i]=0;}c.putImageData(im,0,0);}
   ble.busy=true;updateConn();$('btnCancel').hidden=false;$('prog').hidden=false;$('prog').value=0;
   let failed=null;const job=ble.job={fail:e=>{failed=failed||e;if(ble.initWaiter){ble.initWaiter(false);ble.initWaiter=null;}}};
@@ -1438,7 +1439,7 @@ async function autoTick(){
   if(ble.busy){auto.timer=setTimeout(autoTick,15000);return;}
   if(!await ensureConnected()){auto.fails++;say(`Tự cập nhật: chưa nối lại được màn (lần ${auto.fails}). Sẽ thử lại sau.`,true);
     if(auto.fails>=5){autoStop();say('Tự cập nhật đã dừng vì mất kết nối nhiều lần. Bấm Bật lại khi màn ở gần.',true);return;}auto.timer=setTimeout(autoTick,60000);return;}
-  render();const ok=(tab==='char'||tab==='pic'||(tab==='art'&&$('artBox').value==='side'))?await sendWithClock():await send();auto.fails=ok?0:auto.fails+1;
+  render();const ok=(!(window.DTOverlay&&DTOverlay.fullArt())&&(tab==='char'||tab==='pic'||(tab==='art'&&$('artBox').value==='side')))?await sendWithClock():await send();auto.fails=ok?0:auto.fails+1;
   if(ok){const d=new Date();log(`Tự cập nhật lúc ${d.toLocaleTimeString()}`);}
   autoSchedule();
 }
@@ -1483,5 +1484,6 @@ if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy m
 else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
 </script>
 <script src="shell.js"></script>
+<script src="overlay.js"></script>
 </body>
 </html>
