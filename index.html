@@ -1182,17 +1182,16 @@ const LAYOUTS=[
   ...PICS.map(([g,id,name])=>[g,'pic',name,'picId',id]),
   ['Giờ tự chạy','art','Nhiệm vụ + giờ','artKind','tasks'],['Giờ tự chạy','art','Lời nhắn + giờ','artKind','note'],['Giờ tự chạy','art','Ảnh + giờ','artKind','photo'],
   ...(window.NT_TEMPLATES||[]).map(t=>[NT_COLLS[t.coll],'n',t.name,'nId',t.id]),
-  ...(window.Studio?[['Studio sáng tạo','studio','Thiết kế tự do']]:[]),
   ['Cửa hàng & thông báo','tpl','Thẻ giá','tplKind','price'],['Cửa hàng & thông báo','tpl','Thông báo','tplKind','notice'],['Cửa hàng & thông báo','tpl','Số đỗ xe','tplKind','parking'],['Cửa hàng & thông báo','tpl','Đếm ngược','tplKind','countdown'],
 ].map(([group,t,name,field,value])=>({group,t,name,field,value,id:t+(value?':'+value:'')}));
 const GROUPS=[...new Set(LAYOUTS.map(l=>l.group))];
 let curGroup=null;
-function currentLayout(){return LAYOUTS.find(l=>l.t===tab&&(!l.field||$(l.field).value===l.value))||LAYOUTS[0];}
+function currentLayout(){if(tab==='studio')return {id:'studio',t:'studio',name:'Thiết kế tự do',group:'Studio'};return LAYOUTS.find(l=>l.t===tab&&(!l.field||$(l.field).value===l.value))||LAYOUTS[0];}
 function chooseLayout(l){if(l.field)$(l.field).value=l.value;setTab(l.t);curGroup=l.group;drawGallery();window.dispatchEvent(new CustomEvent('dt:choose',{detail:l}));
   if(innerWidth<820)document.querySelector('.grid').scrollIntoView({behavior:'smooth',block:'start'});}
 const thumbs={};
 function drawGallery(){
-  const cur=currentLayout();curGroup=curGroup||cur.group;$('curName').textContent='· '+cur.name;
+  const cur=currentLayout();if(!GROUPS.includes(curGroup))curGroup=GROUPS.includes(cur.group)?cur.group:GROUPS[0];$('curName').textContent='· '+cur.name;
   $('cats').innerHTML='';for(const g of GROUPS){const b=document.createElement('button');b.setAttribute('role','tab');b.setAttribute('aria-selected',g===curGroup);
     b.innerHTML=`${g}<span class="n">${LAYOUTS.filter(l=>l.group===g).length}</span>`;b.onclick=()=>{curGroup=g;drawGallery();if(LAYOUTS.some(l=>l.group===g&&!thumbs[l.id])){renderThumbs(LAYOUTS.filter(l=>l.group===g&&!thumbs[l.id]));drawGallery();}};$('cats').appendChild(b);}
   $('cards').innerHTML='';for(const l of LAYOUTS.filter(l=>l.group===curGroup)){const c=document.createElement('button');c.className='card'+(l===cur?' sel':'');
@@ -1479,7 +1478,7 @@ $('btnCancel').onclick=()=>{ble.job?.fail(new Error('Đã dừng. Kết nối l�
 $('nId').innerHTML=(window.NT_TEMPLATES||[]).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 $('picId').innerHTML=PICS.map(([,id,name])=>`<option value="${id}">${name}</option>`).join('');
 for(const id of ['kidStyle','clkStyle','splitMode','tplKind','artKind','picId','charScene'])$(id).closest('label').hidden=true; // kiểu đã chọn ở thư viện
-load();if(!['vui','thuong','haohung','met','buon','ngu'].includes($('charMood').value))$('charMood').value='vui';markMood();render();updateConn();makeThumbs();
+load();if(!$('nId').value&&$('nId').options.length)$('nId').selectedIndex=0;if(!['vui','thuong','haohung','met','buon','ngu'].includes($('charMood').value))$('charMood').value='vui';markMood();render();updateConn();makeThumbs();
 if(!navigator.bluetooth)say('Trình duyệt này chưa có Web Bluetooth. Hãy mở bằng Chrome hoặc Edge trên máy tính/Android, hoặc Bluefy trên iPhone.',true);
 else say('Bấm "Kết nối màn hình" và chọn thiết bị NRF_EPD trước khi gửi.');
 </script>

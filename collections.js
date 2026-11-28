@@ -250,4 +250,6 @@ add({id:'g-chuoi',coll:'goals',name:'Chuỗi ngày duy trì',fields:[{k:'habit',
       c.beginPath();c.moveTo(x,b-6*u);c.bezierCurveTo(x-W2*.2,b-6*u,x-W2*.14,H2*.6,x,H2*.45);c.bezierCurveTo(x+W2*.16,H2*.6,x+W2*.2,b-6*u,x,b-6*u);c.fillStyle=W;c.fill();c.stroke();});
     const x=Math.round(w*.34)+6;KIT.label(ctx,'CHUỖI NGÀY',x,16,{size:10,color:R(),track:1.4});KIT.font(ctx,46,800,'round');ctx.fillStyle=K;ctx.fillText(String(n),x,h*.68);const nw=ctx.measureText(String(n)).width;KIT.font(ctx,13,700,'sans');ctx.fillText('ngày',x+nw+6,h*.66);
     KIT.text(ctx,P.habit||'',x,h*.74,w-x-8,h*.24,{max:13,min:9,weight:700,fam:'sans',maxLines:2});}});
+// Đã bỏ khỏi thư viện theo yêu cầu: Little Mood, Pin cảm xúc, Pixel World, Little Goals
+window.NT_TEMPLATES=T.filter(t=>!['mood','battery','pixel','goals'].includes(t.coll));
 })();
